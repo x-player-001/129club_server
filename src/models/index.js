@@ -1,4 +1,4 @@
-const User = require('./User');
+const User = require('./user');
 const Permission = require('./Permission');
 const Team = require('./Team');
 const TeamMember = require('./TeamMember');
