@@ -172,9 +172,17 @@ exports.getUserInfo = async (userId) => {
       {
         model: Team,
         as: 'currentTeam',
-        attributes: ['id', 'name', 'logo', 'color'],
+        attributes: ['id', 'name', 'logo', 'color', 'captainId'],
         foreignKey: 'currentTeamId',
-        required: false
+        required: false,
+        include: [
+          {
+            model: User,
+            as: 'captain',
+            attributes: ['id', 'nickname', 'realName'],
+            required: false
+          }
+        ]
       },
       {
         model: PlayerStat,
