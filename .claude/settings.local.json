@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(mysql:*)",
+      "Bash(where mysql)",
+      "Bash(echo $PATH)",
+      "Bash(node:*)",
+      "Bash(npm install)",
+      "Bash(curl http://localhost:3000/health)",
+      "Bash(curl:*)",
+      "Bash(taskkill:*)",
+      "Bash(python:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(cat:*)",
+      "Bash(npx sequelize-cli:*)",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

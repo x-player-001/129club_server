@@ -1,0 +1,18 @@
+### 健康检查
+GET http://localhost:3000/health
+
+### 获取成员列表（需要先登录获取token）
+GET http://localhost:3000/api/user/members?page=1&pageSize=10
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### 用户登录（测试 - 实际需要微信code）
+POST http://localhost:3000/api/user/login
+Content-Type: application/json
+
+{
+  "code": "test_code",
+  "userInfo": {
+    "nickname": "测试用户",
+    "avatar": "https://example.com/avatar.jpg"
+  }
+}

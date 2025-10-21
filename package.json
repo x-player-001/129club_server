@@ -1,0 +1,53 @@
+{
+  "name": "129club-server",
+  "version": "1.0.0",
+  "description": "129俱乐部足球队管理系统后端API",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "test": "jest --coverage",
+    "lint": "eslint src/**/*.js",
+    "migrate": "node scripts/migrate.js",
+    "seed": "node scripts/seed.js",
+    "calc-stats": "node scripts/calc-stats.js"
+  },
+  "keywords": [
+    "football",
+    "club",
+    "management",
+    "miniprogram"
+  ],
+  "author": "129Club Team",
+  "license": "MIT",
+  "dependencies": {
+    "koa": "^2.14.2",
+    "koa-router": "^12.0.0",
+    "koa-body": "^6.0.1",
+    "koa-cors": "^0.0.16",
+    "koa-logger": "^3.2.1",
+    "koa-json": "^2.0.2",
+    "koa-static": "^5.0.0",
+    "mysql2": "^3.6.0",
+    "sequelize": "^6.33.0",
+    "redis": "^4.6.0",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "axios": "^1.5.0",
+    "moment": "^2.29.4",
+    "ws": "^8.14.2",
+    "dotenv": "^16.3.1",
+    "winston": "^3.10.0",
+    "joi": "^17.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "jest": "^29.7.0",
+    "eslint": "^8.50.0",
+    "sequelize-cli": "^6.6.1"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}
