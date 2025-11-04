@@ -12,6 +12,7 @@ exports.getTeamList = async (params = {}) => {
     page = 1,
     pageSize = 20,
     season,
+    seasonId,
     status = 'active'
   } = params;
 
@@ -20,7 +21,15 @@ exports.getTeamList = async (params = {}) => {
 
   const where = {};
 
-  if (season) {
+  // 如果提供了 seasonId，通过 Season 表查询赛季名称
+  if (seasonId) {
+    const { Season } = require('../models');
+    const seasonData = await Season.findByPk(seasonId);
+    if (seasonData) {
+      where.season = seasonData.name;
+    }
+  } else if (season) {
+    // 如果只提供了 season 名称，直接使用
     where.season = season;
   }
 
@@ -77,7 +86,7 @@ exports.getTeamDetail = async (teamId) => {
       {
         model: User,
         as: 'captain',
-        attributes: ['id', 'nickname', 'realName', 'avatar', 'jerseyNumber', 'position']
+        attributes: ['id', 'nickname', 'realName', 'avatar', 'jerseyNumber', 'position', 'leftFootSkill', 'rightFootSkill']
       },
       {
         model: TeamStat,
@@ -93,7 +102,7 @@ exports.getTeamDetail = async (teamId) => {
           {
             model: User,
             as: 'user',
-            attributes: ['id', 'nickname', 'realName', 'avatar', 'jerseyNumber', 'position'],
+            attributes: ['id', 'nickname', 'realName', 'avatar', 'jerseyNumber', 'position', 'leftFootSkill', 'rightFootSkill'],
             include: [
               {
                 model: PlayerStat,
@@ -109,6 +118,24 @@ exports.getTeamDetail = async (teamId) => {
   });
 
   // 如果查询不到队伍，返回null（用户未加入队伍是正常情况）
+  if (!team) {
+    return null;
+  }
+
+  // 对成员进行排序：队长排第一位，其他成员按号码排序
+  if (team.members && team.members.length > 0) {
+    team.members.sort((a, b) => {
+      // 队长排第一位
+      if (a.role === 'captain' && b.role !== 'captain') return -1;
+      if (a.role !== 'captain' && b.role === 'captain') return 1;
+
+      // 其他成员按号码排序
+      const jerseyA = a.user?.jerseyNumber || 999;
+      const jerseyB = b.user?.jerseyNumber || 999;
+      return jerseyA - jerseyB;
+    });
+  }
+
   return team;
 };
 

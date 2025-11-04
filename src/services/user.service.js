@@ -147,7 +147,9 @@ exports.login = async (code, userInfo = {}) => {
         nickname: user.nickname,
         realName: user.realName,
         avatar: user.avatar,
+        phone: user.phone,
         role: user.role,
+        memberType: user.memberType,
         status: user.status,
         currentTeamId: user.currentTeamId,
         jerseyNumber: user.jerseyNumber,
@@ -214,7 +216,8 @@ exports.updateUserInfo = async (userId, data) => {
   // 只允许更新特定字段
   const allowedFields = [
     'nickname', 'realName', 'avatar', 'phone',
-    'jerseyNumber', 'position', 'memberType'
+    'jerseyNumber', 'position', 'memberType',
+    'leftFootSkill', 'rightFootSkill'
   ];
 
   const updateData = {};

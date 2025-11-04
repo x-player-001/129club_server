@@ -78,6 +78,8 @@
     "phone": "13800138000",
     "jerseyNumber": 10,
     "position": ["LB", "CB"],
+    "leftFootSkill": 3,
+    "rightFootSkill": 5,
     "role": "member",
     "memberType": "temporary",
     "status": "active",
@@ -95,7 +97,7 @@
 ### 1.3 更新用户信息
 - **接口**: `PUT /user/info`
 - **权限**: 需要登录
-- **请求参数**:
+- **请求参数** (所有字段均可选):
 ```json
 {
   "nickname": "新昵称",
@@ -103,6 +105,8 @@
   "phone": "13800138000",
   "position": ["LB", "CB"],
   "jerseyNumber": 10,
+  "leftFootSkill": 3,
+  "rightFootSkill": 5,
   "memberType": "temporary",
   "avatar": "https://..."
 }
@@ -121,6 +125,8 @@
     "phone": "13800138000",
     "jerseyNumber": 10,
     "position": ["LB", "CB"],
+    "leftFootSkill": 3,
+    "rightFootSkill": 5,
     "role": "member",
     "memberType": "temporary",
     "status": "active",
@@ -131,6 +137,9 @@
   "timestamp": 1760625322456
 }
 ```
+- **字段说明**:
+  - `leftFootSkill`: 左脚擅长程度，0-5的整数 (0=不会, 1=很弱, 2=较弱, 3=一般, 4=较强, 5=非常擅长)
+  - `rightFootSkill`: 右脚擅长程度，0-5的整数 (0=不会, 1=很弱, 2=较弱, 3=一般, 4=较强, 5=非常擅长)
 
 ### 1.4 获取成员列表
 - **接口**: `GET /user/members?status=active&teamId=xxx&page=1&pageSize=20`
@@ -468,10 +477,14 @@
 ## 3. 比赛模块 `/api/match`
 
 ### 3.1 获取比赛列表
-- **接口**: `GET /match/list?status=registration&page=1&pageSize=20`
+- **接口**: `GET /match/list?status=completed&teamId=xxx&matchResult=win&page=1&pageSize=20`
 - **权限**: 需要登录
 - **查询参数**:
   - `status`: 比赛状态(registration/in_progress/completed/cancelled)
+  - `teamId`: 队伍ID筛选(可选)
+  - `matchResult`: 比赛结果筛选(win=胜/draw=平/loss=负，可选，**需要配合teamId使用**)
+  - `startDate`: 开始日期筛选(可选，格式：YYYY-MM-DD)
+  - `endDate`: 结束日期筛选(可选，格式：YYYY-MM-DD)
   - `page`, `pageSize`: 分页
 - **响应示例**:
 ```json
@@ -516,6 +529,26 @@
   "timestamp": 1760625600000
 }
 ```
+
+**使用示例**:
+```bash
+# 查询某队伍的所有胜场
+GET /match/list?status=completed&teamId=team-uuid&matchResult=win
+
+# 查询某队伍的所有平局
+GET /match/list?status=completed&teamId=team-uuid&matchResult=draw
+
+# 查询某队伍的所有负场
+GET /match/list?status=completed&teamId=team-uuid&matchResult=loss
+
+# 查询某队伍的所有已完成比赛（不限胜负）
+GET /match/list?status=completed&teamId=team-uuid
+```
+
+**注意事项**:
+- `matchResult` 参数必须配合 `teamId` 使用，否则会被忽略
+- 只有 `status=completed` 且有比赛结果的比赛才会被筛选
+- 返回的 `total` 是过滤后的总数，不是数据库中的总数
 
 ### 3.2 获取比赛详情
 - **接口**: `GET /match/:matchId`
@@ -1206,19 +1239,166 @@ POST /api/match/{matchId}/quarter
 
 ## 5. 统计模块 `/api/stats`
 
-### 5.1 获取球员统计
-- **接口**: `GET /stats/player/:userId?season=2025-S1&teamId=xxx`
+### 5.1 获取球员数据详情
+- **接口**: `GET /stats/player/:userId`
 - **权限**: 需要登录
+- **路径参数**:
+  - `userId`: 用户ID
+- **响应示例**:
+```json
+{
+  "code": 0,
+  "success": true,
+  "message": "操作成功",
+  "data": {
+    "user": {
+      "id": "user-uuid",
+      "realName": "张三",
+      "nickname": "小张",
+      "avatar": "/uploads/avatar.png",
+      "jerseyNumber": 10,
+      "position": ["LW", "RW", "LB", "RB"],
+      "leftFootSkill": 3,
+      "rightFootSkill": 8,
+      "currentTeam": {
+        "id": "team-uuid",
+        "name": "嘉陵摩托",
+        "color": "#c10e15",
+        "logo": "/static/images/jlmt.png"
+      }
+    },
+    "stats": {
+      "totalMatches": 45,
+      "totalGoals": 28,
+      "totalAssists": 15,
+      "totalMVP": 8,
+      "totalWins": 30,
+      "totalDraws": 8,
+      "totalLosses": 7,
+      "winRate": 67,
+      "attendance": 85,
+      "yellowCards": 3,
+      "redCards": 0
+    },
+    "rankings": {
+      "goals": 1,
+      "assists": 3,
+      "mvp": 2,
+      "attendance": 5
+    },
+    "achievements": [
+      {
+        "code": "hat_trick",
+        "name": "帽子戏法",
+        "description": "Score 3 goals in a single match",
+        "icon": "/static/images/hat-trick.png",
+        "unlocked": true,
+        "unlockedAt": "2025-10-22T15:30:46.000Z"
+      },
+      {
+        "code": "perfect_attendance",
+        "name": "全勤奖",
+        "description": "100% attendance rate in the season",
+        "icon": "/static/images/perfect-attendence.png",
+        "unlocked": true,
+        "unlockedAt": "2025-10-22T13:53:50.000Z"
+      }
+    ]
+  },
+  "timestamp": 1760626200000
+}
+```
+
+**说明**:
+- 返回用户完整的个人信息、统计数据、排名和成就
+- 如果用户没有统计数据，stats字段会返回默认值（全部为0）
+- rankings中如果某项为null表示未上榜（例如没有进球就不会出现在射手榜）
+- achievements数组包含用户已解锁的所有成就
+- leftFootSkill和rightFootSkill范围: 0-5 (0=不会, 5=非常擅长)
+- winRate和attendance是百分比数值，前端显示时加%符号
 
 ### 5.2 获取队伍统计
 - **接口**: `GET /stats/team/:teamId?season=2025-S1`
 - **权限**: 需要登录
 
 ### 5.3 获取排行榜
-- **接口**: `GET /stats/ranking/:type?season=2025-S1&teamId=xxx&page=1&pageSize=20`
+- **接口**: `GET /stats/ranking/:type?scope=all&season=2025-S1&teamId=xxx&page=1&pageSize=20`
 - **权限**: 需要登录
 - **路径参数**:
   - `type`: goals(射手榜) | assists(助攻榜) | mvp(MVP榜) | attendance(出勤榜)
+- **查询参数**:
+  - `scope`: 范围 (all=全局排名 | team=队内排名，默认: all)
+  - `teamId`: 队伍ID (scope=team时必需)
+  - `season`: 赛季筛选 (可选)
+  - `page`: 页码 (默认: 1)
+  - `pageSize`: 每页数量 (默认: 50)
+- **响应示例**:
+```json
+{
+  "code": 0,
+  "success": true,
+  "message": "操作成功",
+  "data": {
+    "list": [
+      {
+        "rank": 1,
+        "userId": "user-uuid",
+        "user": {
+          "id": "user-uuid",
+          "nickname": "张三",
+          "realName": "张三",
+          "avatar": "https://...",
+          "currentTeam": {
+            "id": "team-uuid",
+            "name": "嘉陵摩托",
+            "color": "#c10e15",
+            "logo": "/static/images/jlmt.png"
+          }
+        },
+        "goals": 25,
+        "assists": 18,
+        "matchesPlayed": 20
+      }
+    ],
+    "total": 50,
+    "page": 1,
+    "pageSize": 50,
+    "totalPages": 1
+  },
+  "timestamp": 1760626200000
+}
+```
+
+**使用示例**:
+```bash
+# 获取射手榜（全局）
+GET /stats/ranking/goals?scope=all&page=1&pageSize=50
+
+# 获取助攻榜（全局）
+GET /stats/ranking/assists?scope=all&page=1&pageSize=50
+
+# 获取MVP榜（全局）
+GET /stats/ranking/mvp?scope=all&page=1&pageSize=50
+
+# 获取出勤榜（全局）
+GET /stats/ranking/attendance?scope=all&page=1&pageSize=50
+
+# 获取队内射手榜
+GET /stats/ranking/goals?scope=team&teamId=team-uuid&page=1&pageSize=20
+```
+
+**说明**:
+- 排行榜规则:
+  - 射手榜、助攻榜、MVP榜只统计至少参加过1场比赛的球员
+  - 出勤榜显示所有球员（包括未到场的球员，出勤率为0%）
+- 根据type返回不同的统计字段:
+  - `goals`: 返回 goals(进球数) + assists(助攻数)
+  - `assists`: 返回 assists(助攻数) + goals(进球数)
+  - `mvp`: 返回 mvpCount(MVP次数) + goals + assists
+  - `attendance`: 返回 matchesPlayed(到场次数) + attendanceRate(出勤率%)
+- 排序规则:
+  - 射手榜、助攻榜、MVP榜: 主字段降序 → 参赛场次降序 → 进球数降序
+  - 出勤榜: 到场次数降序 → 出勤率降序 → 进球数降序
 
 ### 5.4 获取数据总览
 - **接口**: `GET /stats/overview`

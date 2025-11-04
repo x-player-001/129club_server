@@ -1,4 +1,4 @@
-const { Match, MatchResult, MatchParticipant, Season, Team, User } = require('../models');
+const { Match, MatchResult, MatchParticipant, Season, Team, User, PlayerStat } = require('../models');
 const { Op } = require('sequelize');
 const logger = require('../utils/logger');
 
@@ -356,7 +356,155 @@ async function formatRecentMatches(matches, userId) {
 }
 
 exports.getPlayerStats = async (userId, params) => {
-  return { message: 'Not implemented yet' };
+  try {
+    const { User, PlayerStat, Team, UserAchievement, Achievement } = require('../models');
+
+    // 1. 获取用户基本信息
+    const user = await User.findByPk(userId, {
+      attributes: ['id', 'realName', 'nickname', 'avatar', 'jerseyNumber', 'position', 'leftFootSkill', 'rightFootSkill'],
+      include: [{
+        model: Team,
+        as: 'currentTeam',
+        attributes: ['id', 'name', 'color', 'logo']
+      }]
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // 2. 获取用户统计数据
+    let playerStat = await PlayerStat.findOne({
+      where: { userId }
+    });
+
+    // 如果没有统计记录，创建一个默认的
+    if (!playerStat) {
+      playerStat = {
+        matchesPlayed: 0,
+        goals: 0,
+        assists: 0,
+        mvpCount: 0,
+        wins: 0,
+        draws: 0,
+        losses: 0,
+        winRate: '0.00',
+        attendanceRate: '0.00',
+        yellowCards: 0,
+        redCards: 0
+      };
+    }
+
+    // 3. 计算排名
+    const rankings = {};
+
+    // 射手榜排名
+    if (playerStat.goals > 0) {
+      const goalsRank = await PlayerStat.count({
+        where: {
+          goals: { [Op.gt]: playerStat.goals }
+        }
+      });
+      rankings.goals = goalsRank + 1;
+    } else {
+      rankings.goals = null;
+    }
+
+    // 助攻榜排名
+    if (playerStat.assists > 0) {
+      const assistsRank = await PlayerStat.count({
+        where: {
+          assists: { [Op.gt]: playerStat.assists }
+        }
+      });
+      rankings.assists = assistsRank + 1;
+    } else {
+      rankings.assists = null;
+    }
+
+    // MVP榜排名
+    if (playerStat.mvpCount > 0) {
+      const mvpRank = await PlayerStat.count({
+        where: {
+          mvpCount: { [Op.gt]: playerStat.mvpCount }
+        }
+      });
+      rankings.mvp = mvpRank + 1;
+    } else {
+      rankings.mvp = null;
+    }
+
+    // 出勤榜排名（按到场次数）
+    const attendanceRank = await PlayerStat.count({
+      where: {
+        [Op.or]: [
+          { matchesPlayed: { [Op.gt]: playerStat.matchesPlayed } },
+          {
+            matchesPlayed: playerStat.matchesPlayed,
+            attendanceRate: { [Op.gt]: playerStat.attendanceRate }
+          }
+        ]
+      }
+    });
+    rankings.attendance = attendanceRank + 1;
+
+    // 4. 获取成就列表
+    const userAchievements = await UserAchievement.findAll({
+      where: { userId },
+      include: [{
+        model: Achievement,
+        as: 'achievement',
+        attributes: ['code', 'name', 'description', 'icon']
+      }]
+    });
+
+    const achievements = userAchievements.map(ua => ({
+      code: ua.achievement.code,
+      name: ua.achievement.name,
+      description: ua.achievement.description,
+      icon: ua.achievement.icon,
+      unlocked: true,
+      unlockedAt: ua.unlockedAt
+    }));
+
+    // 5. 组装返回数据
+    return {
+      user: {
+        id: user.id,
+        realName: user.realName,
+        nickname: user.nickname,
+        avatar: user.avatar,
+        jerseyNumber: user.jerseyNumber,
+        position: user.position,
+        leftFootSkill: user.leftFootSkill,
+        rightFootSkill: user.rightFootSkill,
+        currentTeam: user.currentTeam ? {
+          id: user.currentTeam.id,
+          name: user.currentTeam.name,
+          color: user.currentTeam.color,
+          logo: user.currentTeam.logo
+        } : null
+      },
+      stats: {
+        totalMatches: playerStat.matchesPlayed || 0,
+        totalGoals: playerStat.goals || 0,
+        totalAssists: playerStat.assists || 0,
+        totalMVP: playerStat.mvpCount || 0,
+        totalWins: playerStat.wins || 0,
+        totalDraws: playerStat.draws || 0,
+        totalLosses: playerStat.losses || 0,
+        winRate: parseFloat(playerStat.winRate || 0),
+        attendance: parseFloat(playerStat.attendanceRate || 0),
+        yellowCards: playerStat.yellowCards || 0,
+        redCards: playerStat.redCards || 0
+      },
+      rankings,
+      achievements
+    };
+  } catch (error) {
+    logger.error(`Get player stats failed: ${error.message}`);
+    throw error;
+  }
 };
 
 exports.getTeamStats = async (teamId, params) => {
@@ -405,23 +553,36 @@ exports.getTeamStats = async (teamId, params) => {
     matches.forEach(match => {
       if (match.result) {
         const isTeam1 = match.team1Id === teamId;
-        const team1Score = match.result.team1Score || 0;
-        const team2Score = match.result.team2Score || 0;
+        const winnerTeamId = match.result.winnerTeamId;
+
+        // 使用进球数统计进球
+        const team1Goals = match.result.team1TotalGoals || match.result.team1Score || 0;
+        const team2Goals = match.result.team2TotalGoals || match.result.team2Score || 0;
 
         if (isTeam1) {
-          goalsFor += team1Score;
-          goalsAgainst += team2Score;
+          goalsFor += team1Goals;
+          goalsAgainst += team2Goals;
 
-          if (team1Score > team2Score) wins++;
-          else if (team1Score === team2Score) draws++;
-          else losses++;
+          // 使用winnerTeamId判断胜负
+          if (winnerTeamId === teamId) {
+            wins++;
+          } else if (winnerTeamId === null) {
+            draws++;
+          } else {
+            losses++;
+          }
         } else {
-          goalsFor += team2Score;
-          goalsAgainst += team1Score;
+          goalsFor += team2Goals;
+          goalsAgainst += team1Goals;
 
-          if (team2Score > team1Score) wins++;
-          else if (team2Score === team1Score) draws++;
-          else losses++;
+          // 使用winnerTeamId判断胜负
+          if (winnerTeamId === teamId) {
+            wins++;
+          } else if (winnerTeamId === null) {
+            draws++;
+          } else {
+            losses++;
+          }
         }
       }
     });
@@ -456,8 +617,152 @@ exports.getTeamStats = async (teamId, params) => {
   }
 };
 
-exports.getRanking = async (type, params) => {
-  return { message: 'Not implemented yet' };
+/**
+ * 获取排行榜
+ * @param {string} type - 排行榜类型: goals(射手榜), assists(助攻榜), mvp(MVP榜), attendance(出勤榜)
+ * @param {Object} params - 查询参数
+ * @param {string} params.scope - 范围: all(全局), team(队内)
+ * @param {string} params.teamId - 队伍ID (scope=team时必需)
+ * @param {string} params.season - 赛季筛选
+ * @param {number} params.page - 页码
+ * @param {number} params.pageSize - 每页数量
+ */
+exports.getRanking = async (type, params = {}) => {
+  try {
+    const {
+      scope = 'all',
+      teamId,
+      season,
+      page = 1,
+      pageSize = 50
+    } = params;
+
+    const offset = (page - 1) * pageSize;
+    const limit = parseInt(pageSize);
+
+    // 验证type参数
+    const validTypes = ['goals', 'assists', 'mvp', 'attendance'];
+    if (!validTypes.includes(type)) {
+      throw new Error('Invalid ranking type');
+    }
+
+    // 根据type确定排序字段
+    const orderFieldMap = {
+      goals: 'goals',
+      assists: 'assists',
+      mvp: 'mvpCount',
+      attendance: 'matchesPlayed'  // 出勤榜按到场次数排序
+    };
+    const orderField = orderFieldMap[type];
+
+    // 构建查询条件
+    const include = [
+      {
+        model: User,
+        as: 'user',
+        attributes: ['id', 'nickname', 'realName', 'avatar', 'currentTeamId'],
+        required: true,
+        include: [
+          {
+            model: Team,
+            as: 'currentTeam',
+            attributes: ['id', 'name', 'color', 'logo'],
+            required: false
+          }
+        ]
+      }
+    ];
+
+    // 如果是队内排名,需要过滤队伍
+    if (scope === 'team') {
+      if (!teamId) {
+        throw new Error('TeamId is required for team scope');
+      }
+      include[0].where = { currentTeamId: teamId };
+    }
+
+    // 构建查询条件
+    const whereCondition = {};
+
+    // 对于非出勤榜，只显示至少参加过1场比赛的球员
+    // 对于出勤榜，显示所有球员（包括缺勤的）
+    if (type !== 'attendance') {
+      whereCondition.matchesPlayed = { [Op.gt]: 0 };
+    }
+
+    // 构建排序规则
+    const orderRules = [[orderField, 'DESC']];
+
+    // 对于非出勤榜，次要排序按参赛场次
+    // 对于出勤榜，次要排序按出勤率
+    if (type === 'attendance') {
+      orderRules.push(['attendanceRate', 'DESC']);
+    } else {
+      orderRules.push(['matchesPlayed', 'DESC']);
+    }
+
+    // 第三排序：进球数
+    orderRules.push(['goals', 'DESC']);
+
+    // 查询PlayerStat数据
+    const { count, rows } = await PlayerStat.findAndCountAll({
+      include,
+      where: whereCondition,
+      order: orderRules,
+      offset,
+      limit
+    });
+
+    // 格式化返回数据
+    const list = rows.map((stat, index) => {
+      const baseData = {
+        rank: offset + index + 1,
+        userId: stat.userId,
+        user: {
+          id: stat.user.id,
+          nickname: stat.user.nickname,
+          realName: stat.user.realName,
+          avatar: stat.user.avatar,
+          currentTeam: stat.user.currentTeam ? {
+            id: stat.user.currentTeam.id,
+            name: stat.user.currentTeam.name,
+            color: stat.user.currentTeam.color,
+            logo: stat.user.currentTeam.logo
+          } : null
+        },
+        matchesPlayed: stat.matchesPlayed
+      };
+
+      // 根据type添加对应的统计字段
+      if (type === 'goals') {
+        baseData.goals = stat.goals;
+        baseData.assists = stat.assists; // 也显示助攻数
+      } else if (type === 'assists') {
+        baseData.assists = stat.assists;
+        baseData.goals = stat.goals; // 也显示进球数
+      } else if (type === 'mvp') {
+        baseData.mvpCount = stat.mvpCount;
+        baseData.goals = stat.goals;
+        baseData.assists = stat.assists;
+      } else if (type === 'attendance') {
+        baseData.attendanceRate = parseFloat(stat.attendanceRate || 0);
+        baseData.matchesPlayed = stat.matchesPlayed;
+      }
+
+      return baseData;
+    });
+
+    return {
+      list,
+      total: count,
+      page: parseInt(page),
+      pageSize: limit,
+      totalPages: Math.ceil(count / limit)
+    };
+  } catch (error) {
+    logger.error(`Get ranking failed: ${error.message}`);
+    throw error;
+  }
 };
 
 exports.getTeamCompare = async (team1Id, team2Id) => {

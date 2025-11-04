@@ -71,6 +71,28 @@ const User = sequelize.define('User', {
       }
     }
   },
+  leftFootSkill: {
+    type: DataTypes.TINYINT.UNSIGNED,
+    allowNull: true,
+    defaultValue: 0,
+    field: 'left_foot_skill',
+    comment: '左脚擅长程度(0-5, 0=不会, 5=非常擅长)',
+    validate: {
+      min: 0,
+      max: 5
+    }
+  },
+  rightFootSkill: {
+    type: DataTypes.TINYINT.UNSIGNED,
+    allowNull: true,
+    defaultValue: 0,
+    field: 'right_foot_skill',
+    comment: '右脚擅长程度(0-5, 0=不会, 5=非常擅长)',
+    validate: {
+      min: 0,
+      max: 5
+    }
+  },
   role: {
     type: DataTypes.ENUM('super_admin', 'captain', 'member'),
     defaultValue: 'member',

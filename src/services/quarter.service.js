@@ -663,6 +663,12 @@ exports.supplementQuarterResult = async (matchId, data, userId) => {
 
   logger.info(`Quarter match result supplemented: ${matchId}, status: completed, mvps: ${mvpUserIds ? mvpUserIds.length : 0}`);
 
+  // 更新队伍统计数据
+  await updateTeamStats(match, result);
+
+  // 更新球员统计数据
+  await updatePlayerStats(matchId);
+
   // Check achievements for all participants
   const achievementService = require('./achievement.service');
   const participants = await MatchParticipant.findAll({ where: { matchId } });
@@ -696,5 +702,175 @@ exports.supplementQuarterResult = async (matchId, data, userId) => {
   };
 };
 
+
+/**
+ * 更新队伍统计数据
+ */
+async function updateTeamStats(match, result) {
+  const { TeamStat, Season, MatchQuarter } = require('../models');
+
+  // 获取赛季信息
+  const season = await Season.findByPk(match.seasonId);
+  const seasonName = season ? season.name : '未知赛季';
+
+  // 获取所有节次数据以计算实际进球数
+  const quarters = await MatchQuarter.findAll({
+    where: { matchId: match.id },
+    order: [['quarter_number', 'ASC']]
+  });
+
+  // 计算总进球数
+  let team1Goals = 0;
+  let team2Goals = 0;
+
+  quarters.forEach(quarter => {
+    team1Goals += quarter.team1Goals || 0;
+    team2Goals += quarter.team2Goals || 0;
+  });
+
+  // 更新队伍1统计
+  await updateSingleTeamStats(match.team1Id, seasonName, match.team1Id === result.winnerTeamId, result.winnerTeamId === null, team1Goals, team2Goals);
+
+  // 更新队伍2统计
+  await updateSingleTeamStats(match.team2Id, seasonName, match.team2Id === result.winnerTeamId, result.winnerTeamId === null, team2Goals, team1Goals);
+}
+
+/**
+ * 更新单个队伍的统计数据
+ */
+async function updateSingleTeamStats(teamId, season, isWin, isDraw, goalsFor, goalsAgainst) {
+  const { TeamStat } = require('../models');
+
+  const [teamStat, created] = await TeamStat.findOrCreate({
+    where: { teamId, season },
+    defaults: {
+      matchesPlayed: 0,
+      wins: 0,
+      draws: 0,
+      losses: 0,
+      goalsFor: 0,
+      goalsAgainst: 0,
+      goalDifference: 0,
+      points: 0,
+      winRate: '0.00'
+    }
+  });
+
+  // 更新统计
+  teamStat.matchesPlayed += 1;
+
+  if (isWin) {
+    teamStat.wins += 1;
+    teamStat.points += 3;
+  } else if (isDraw) {
+    teamStat.draws += 1;
+    teamStat.points += 1;
+  } else {
+    teamStat.losses += 1;
+  }
+
+  teamStat.goalsFor += goalsFor;
+  teamStat.goalsAgainst += goalsAgainst;
+  teamStat.goalDifference = teamStat.goalsFor - teamStat.goalsAgainst;
+  teamStat.winRate = ((teamStat.wins / teamStat.matchesPlayed) * 100).toFixed(2);
+
+  await teamStat.save();
+
+  logger.info(`Team stats updated for team ${teamId}: ${teamStat.wins}W ${teamStat.draws}D ${teamStat.losses}L`);
+}
+
+/**
+ * 更新球员统计数据
+ */
+async function updatePlayerStats(matchId) {
+  const { PlayerStat, MatchEvent, MatchParticipant, User, Match } = require('../models');
+
+  // 获取比赛事件统计
+  const events = await MatchEvent.findAll({
+    where: { matchId }
+  });
+
+  // 获取到场人员
+  const participants = await MatchParticipant.findAll({
+    where: { matchId }
+  });
+
+  // 统计每个球员的数据
+  const playerStats = {};
+
+  // 统计事件
+  events.forEach(event => {
+    if (!playerStats[event.userId]) {
+      playerStats[event.userId] = { goals: 0, assists: 0 };
+    }
+
+    if (event.eventType === 'goal') {
+      playerStats[event.userId].goals += 1;
+    }
+
+    // 处理助攻
+    if (event.assistUserId) {
+      if (!playerStats[event.assistUserId]) {
+        playerStats[event.assistUserId] = { goals: 0, assists: 0 };
+      }
+      playerStats[event.assistUserId].assists += 1;
+    }
+  });
+
+  // 更新每个参赛球员的统计
+  for (const participant of participants) {
+    const userId = participant.userId;
+
+    const [playerStat, created] = await PlayerStat.findOrCreate({
+      where: { userId },
+      defaults: {
+        matchesPlayed: 0,
+        goals: 0,
+        assists: 0,
+        wins: 0,
+        draws: 0,
+        losses: 0,
+        winRate: '0.00',
+        attendanceRate: '0.00'
+      }
+    });
+
+    // 更新比赛场次
+    playerStat.matchesPlayed += 1;
+
+    // 更新进球和助攻
+    if (playerStats[userId]) {
+      playerStat.goals += playerStats[userId].goals || 0;
+      playerStat.assists += playerStats[userId].assists || 0;
+    }
+
+    // 计算出勤率（按队伍计算）
+    const user = await User.findByPk(userId, {
+      attributes: ['currentTeamId']
+    });
+
+    if (user && user.currentTeamId) {
+      // 统计该队伍参加的已完成比赛总数
+      const teamMatchCount = await Match.count({
+        where: {
+          status: 'completed',
+          [Op.or]: [
+            { team1Id: user.currentTeamId },
+            { team2Id: user.currentTeamId }
+          ]
+        }
+      });
+
+      if (teamMatchCount > 0) {
+        // 出勤率 = 球员参赛场次 / 队伍总比赛数 × 100
+        playerStat.attendanceRate = ((playerStat.matchesPlayed / teamMatchCount) * 100).toFixed(2);
+      }
+    }
+
+    await playerStat.save();
+
+    logger.info(`Player stats updated for user ${userId}: ${playerStat.matchesPlayed} matches, ${playerStat.goals} goals, attendance: ${playerStat.attendanceRate}%`);
+  }
+}
 
 module.exports = exports;

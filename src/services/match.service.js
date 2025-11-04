@@ -6,6 +6,13 @@ const { autoUpdateMatchStatus } = require('../utils/matchStatusUpdater');
 /**
  * 获取比赛列表
  * @param {Object} params 查询参数
+ * @param {string} params.teamId - 队伍ID
+ * @param {string} params.matchResult - 比赛结果筛选(win=胜, draw=平, loss=负), 需要配合teamId使用
+ * @param {string} params.status - 比赛状态
+ * @param {string} params.startDate - 开始日期
+ * @param {string} params.endDate - 结束日期
+ * @param {number} params.page - 页码
+ * @param {number} params.pageSize - 每页数量
  */
 exports.getMatchList = async (params = {}) => {
   const {
@@ -13,6 +20,7 @@ exports.getMatchList = async (params = {}) => {
     pageSize = 20,
     status,
     teamId,
+    matchResult,
     startDate,
     endDate
   } = params;
@@ -67,8 +75,34 @@ exports.getMatchList = async (params = {}) => {
     order: [['matchDate', 'DESC']]
   });
 
+  // 如果需要按matchResult筛选,需要在内存中过滤
+  let filteredRows = rows;
+  if (teamId && matchResult && ['win', 'draw', 'loss'].includes(matchResult)) {
+    filteredRows = rows.filter(match => {
+      // 只筛选已完成的比赛
+      if (match.status !== 'completed' || !match.result) {
+        return false;
+      }
+
+      const winnerTeamId = match.result.winnerTeamId;
+
+      if (matchResult === 'win') {
+        // 查找该队赢的比赛
+        return winnerTeamId === teamId;
+      } else if (matchResult === 'draw') {
+        // 查找平局的比赛
+        return winnerTeamId === null;
+      } else if (matchResult === 'loss') {
+        // 查找该队输的比赛
+        return winnerTeamId !== null && winnerTeamId !== teamId;
+      }
+
+      return false;
+    });
+  }
+
   // 获取每场比赛的报名人数
-  for (const match of rows) {
+  for (const match of filteredRows) {
     const team1Count = await Registration.count({
       where: { matchId: match.id, teamId: match.team1Id, status: { [Op.in]: ['registered', 'confirmed'] } }
     });
@@ -80,11 +114,11 @@ exports.getMatchList = async (params = {}) => {
   }
 
   return {
-    list: rows,
-    total: count,
+    list: filteredRows,
+    total: filteredRows.length, // 注意: 这里返回的是过滤后的总数
     page: parseInt(page),
     pageSize: limit,
-    totalPages: Math.ceil(count / limit)
+    totalPages: Math.ceil(filteredRows.length / limit)
   };
 };
 
