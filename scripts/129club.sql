@@ -11,7 +11,7 @@
  Target Server Version : 80040 (8.0.40)
  File Encoding         : 65001
 
- Date: 23/10/2025 18:52:50
+ Date: 12/11/2025 15:07:54
 */
 
 SET NAMES utf8mb4;
@@ -300,7 +300,7 @@ CREATE TABLE `matches`  (
 -- ----------------------------
 INSERT INTO `matches` VALUES ('10edf456-d68f-408e-a754-e3a58d3b535b', '第一届两江超级联赛 第2场', '281a79c2-e10a-4bfa-8dc8-def0b7b7580a', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', '2025-10-23 08:00:00', '轨道基地', NULL, 'in_progress', NULL, 8, '44e4d614-0a57-4d14-9fc2-47de3602a84b', '2025-10-22 22:08:11', '2025-10-23 17:47:00', 1, 1, 0, 'ed6cba6b-5e8e-4985-a674-e2d8701a1171');
 INSERT INTO `matches` VALUES ('1234241a-a9e8-4eed-8736-41b9a533ed24', '第一届两江超级联赛 第1场', '281a79c2-e10a-4bfa-8dc8-def0b7b7580a', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', '2025-10-22 08:00:00', '轨道基地', NULL, 'completed', NULL, 8, '44e4d614-0a57-4d14-9fc2-47de3602a84b', '2025-10-22 09:36:21', '2025-10-22 21:53:50', 1, 3, 3, 'ed6cba6b-5e8e-4985-a674-e2d8701a1171');
-INSERT INTO `matches` VALUES ('f56a9312-44e4-4992-9e60-07e632241aec', '第一届两江超级联赛 第3场', '281a79c2-e10a-4bfa-8dc8-def0b7b7580a', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', '2025-10-25 08:00:00', '轨道基地', NULL, 'upcoming', NULL, 8, '44e4d614-0a57-4d14-9fc2-47de3602a84b', '2025-10-23 18:24:48', '2025-10-23 18:24:48', 1, 0, 0, 'ed6cba6b-5e8e-4985-a674-e2d8701a1171');
+INSERT INTO `matches` VALUES ('f56a9312-44e4-4992-9e60-07e632241aec', '第一届两江超级联赛 第3场', '281a79c2-e10a-4bfa-8dc8-def0b7b7580a', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', '2025-10-25 08:00:00', '轨道基地', NULL, 'in_progress', NULL, 8, '44e4d614-0a57-4d14-9fc2-47de3602a84b', '2025-10-23 18:24:48', '2025-11-04 00:29:07', 1, 0, 0, 'ed6cba6b-5e8e-4985-a674-e2d8701a1171');
 
 -- ----------------------------
 -- Table structure for notices
@@ -565,20 +565,22 @@ CREATE TABLE `player_stats`  (
 -- ----------------------------
 -- Records of player_stats
 -- ----------------------------
-INSERT INTO `player_stats` VALUES ('0dbc909e-8348-4f22-9897-5790cf933cfd', '2f82d131-6e19-4fd3-9258-e514e1ae6e80', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0.00, 0.00, '2025-10-23 18:07:59');
-INSERT INTO `player_stats` VALUES ('32ef5bd8-e870-4d94-8236-d41de2dd8d0c', '6c97ae03-23a1-4e8d-a6ca-54ef1d93d9a4', 1, 0, 0, 0, 1, 0, 0, 0, 0, 0.00, 0.00, '2025-10-23 18:07:59');
-INSERT INTO `player_stats` VALUES ('67d281d5-5545-4875-8efb-081d2143c85f', '399a4992-d14e-488a-9ece-0e0f8f36f9be', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0.00, 0.00, '2025-10-23 18:07:59');
-INSERT INTO `player_stats` VALUES ('73b7aec1-d7dc-46cd-bd81-13d80f71ee57', '1b7a8b48-91aa-472d-90ed-fcdd92fdb21b', 1, 0, 0, 0, 0, 1, 0, 0, 0, 0.00, 0.00, '2025-10-23 18:07:59');
-INSERT INTO `player_stats` VALUES ('98158075-0b12-4fdc-9d50-c9196b60352e', '3a6c64d0-b4d8-45da-903a-6d0e162df3d7', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0.00, 0.00, '2025-10-23 18:07:59');
-INSERT INTO `player_stats` VALUES ('a045ca4b-a14d-421a-ac61-cdcbd086ed76', '8f0b0665-0aac-4935-85c3-5e9c17f17e48', 1, 0, 0, 0, 1, 0, 0, 0, 0, 0.00, 0.00, '2025-10-23 18:07:59');
-INSERT INTO `player_stats` VALUES ('a0f60602-964f-4ea4-82d9-4276022a4bba', 'b4660611-bfee-4eeb-a10b-d6f69fdfea6a', 1, 0, 0, 0, 0, 1, 0, 0, 0, 0.00, 0.00, '2025-10-23 18:07:59');
-INSERT INTO `player_stats` VALUES ('a44b52d1-7bba-43d4-bee3-e50c5c45a4d6', 'a1aba0f0-f58a-44a1-a351-365d8e8545ff', 1, 0, 0, 0, 1, 0, 0, 0, 0, 0.00, 0.00, '2025-10-23 18:07:59');
-INSERT INTO `player_stats` VALUES ('a81bfb76-2790-4e42-944e-5066334c1fc3', '8d07fd09-38d7-452f-9ea2-b74b22e616f9', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0.00, 0.00, '2025-10-23 18:07:59');
-INSERT INTO `player_stats` VALUES ('b8f06f33-5150-4344-9bcd-108e6a50fe55', '428549ce-ad21-49f3-b00a-c0e9943fb0f3', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0.00, 0.00, '2025-10-23 18:07:59');
-INSERT INTO `player_stats` VALUES ('ceb1c3d6-d972-48f4-8575-52cf9bd9176b', '0609948d-318d-418f-8c48-db729f4dbe5c', 1, 0, 0, 0, 1, 0, 0, 0, 0, 0.00, 0.00, '2025-10-23 18:07:59');
-INSERT INTO `player_stats` VALUES ('e54519d5-c5c7-4c60-a4d4-24bb731d94d2', '6e66bed9-3d63-45f9-9576-80dce9aa3f1a', 1, 0, 0, 0, 1, 0, 0, 0, 0, 0.00, 0.00, '2025-10-23 18:07:59');
-INSERT INTO `player_stats` VALUES ('e7600c23-d53d-4e86-9cda-fa21a30939d1', 'c3c8aa05-e8dd-45ca-b56e-1901038b58d7', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0.00, 0.00, '2025-10-23 18:07:59');
-INSERT INTO `player_stats` VALUES ('e86e7a42-de02-495b-ae43-f3b5a8d7da17', '44e4d614-0a57-4d14-9fc2-47de3602a84b', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0.00, 0.00, '2025-10-23 18:07:59');
+INSERT INTO `player_stats` VALUES ('0dbc909e-8348-4f22-9897-5790cf933cfd', '2f82d131-6e19-4fd3-9258-e514e1ae6e80', 1, 0, 0, 0, 0, 0, 0, 0, 0, 100.00, 0.00, '2025-11-04 16:23:07');
+INSERT INTO `player_stats` VALUES ('32ef5bd8-e870-4d94-8236-d41de2dd8d0c', '6c97ae03-23a1-4e8d-a6ca-54ef1d93d9a4', 1, 0, 0, 0, 1, 0, 0, 0, 0, 100.00, 0.00, '2025-11-04 16:23:07');
+INSERT INTO `player_stats` VALUES ('440e3c56-793e-4cdc-846a-d6eb94ebb031', '4abd69c8-1df1-481b-8a0e-5cb64265ff44', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.00, 0.00, '2025-11-04 16:48:28');
+INSERT INTO `player_stats` VALUES ('679a80d0-0fcb-4e07-ad3e-e521ce6722eb', '53b7cd6e-8cc6-4c4d-8b56-8fe53b80855f', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.00, 0.00, '2025-11-04 16:48:28');
+INSERT INTO `player_stats` VALUES ('67d281d5-5545-4875-8efb-081d2143c85f', '399a4992-d14e-488a-9ece-0e0f8f36f9be', 1, 0, 0, 0, 0, 0, 0, 0, 0, 100.00, 0.00, '2025-11-04 16:23:07');
+INSERT INTO `player_stats` VALUES ('73b7aec1-d7dc-46cd-bd81-13d80f71ee57', '1b7a8b48-91aa-472d-90ed-fcdd92fdb21b', 1, 0, 0, 0, 0, 1, 0, 0, 0, 100.00, 0.00, '2025-11-04 16:23:07');
+INSERT INTO `player_stats` VALUES ('98158075-0b12-4fdc-9d50-c9196b60352e', '3a6c64d0-b4d8-45da-903a-6d0e162df3d7', 1, 0, 0, 0, 0, 0, 0, 0, 0, 100.00, 0.00, '2025-11-04 16:23:07');
+INSERT INTO `player_stats` VALUES ('a045ca4b-a14d-421a-ac61-cdcbd086ed76', '8f0b0665-0aac-4935-85c3-5e9c17f17e48', 1, 0, 0, 0, 1, 0, 0, 0, 0, 100.00, 0.00, '2025-11-04 16:23:07');
+INSERT INTO `player_stats` VALUES ('a0f60602-964f-4ea4-82d9-4276022a4bba', 'b4660611-bfee-4eeb-a10b-d6f69fdfea6a', 1, 0, 0, 0, 0, 1, 0, 0, 0, 100.00, 0.00, '2025-11-04 16:23:07');
+INSERT INTO `player_stats` VALUES ('a44b52d1-7bba-43d4-bee3-e50c5c45a4d6', 'a1aba0f0-f58a-44a1-a351-365d8e8545ff', 1, 0, 0, 0, 1, 0, 0, 0, 0, 100.00, 0.00, '2025-11-04 16:23:07');
+INSERT INTO `player_stats` VALUES ('a81bfb76-2790-4e42-944e-5066334c1fc3', '8d07fd09-38d7-452f-9ea2-b74b22e616f9', 1, 0, 0, 0, 0, 0, 0, 0, 0, 100.00, 0.00, '2025-11-04 16:23:07');
+INSERT INTO `player_stats` VALUES ('b8f06f33-5150-4344-9bcd-108e6a50fe55', '428549ce-ad21-49f3-b00a-c0e9943fb0f3', 1, 0, 0, 0, 0, 0, 0, 0, 0, 100.00, 0.00, '2025-11-04 16:23:07');
+INSERT INTO `player_stats` VALUES ('ceb1c3d6-d972-48f4-8575-52cf9bd9176b', '0609948d-318d-418f-8c48-db729f4dbe5c', 1, 0, 0, 0, 1, 0, 0, 0, 0, 100.00, 0.00, '2025-11-04 16:23:07');
+INSERT INTO `player_stats` VALUES ('e54519d5-c5c7-4c60-a4d4-24bb731d94d2', '6e66bed9-3d63-45f9-9576-80dce9aa3f1a', 1, 0, 0, 0, 1, 0, 0, 0, 0, 100.00, 0.00, '2025-11-04 16:23:07');
+INSERT INTO `player_stats` VALUES ('e7600c23-d53d-4e86-9cda-fa21a30939d1', 'c3c8aa05-e8dd-45ca-b56e-1901038b58d7', 1, 0, 0, 0, 0, 0, 0, 0, 0, 100.00, 0.00, '2025-11-04 16:23:07');
+INSERT INTO `player_stats` VALUES ('e86e7a42-de02-495b-ae43-f3b5a8d7da17', '44e4d614-0a57-4d14-9fc2-47de3602a84b', 1, 0, 0, 0, 0, 0, 0, 0, 0, 100.00, 0.00, '2025-11-04 16:23:07');
 
 -- ----------------------------
 -- Table structure for player_team_stats
@@ -945,6 +947,8 @@ CREATE TABLE `users`  (
   `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '手机号',
   `jersey_number` int NULL DEFAULT NULL COMMENT '球衣号码',
   `position` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '场上位置编码JSON数组 (支持多选, 如 [\"CAM\",\"LW\",\"ST\"])',
+  `left_foot_skill` tinyint UNSIGNED NULL DEFAULT 0 COMMENT '左脚擅长程度(0-5)',
+  `right_foot_skill` tinyint UNSIGNED NULL DEFAULT 0 COMMENT '右脚擅长程度(0-5)',
   `role` enum('super_admin','captain','member') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'member' COMMENT '角色',
   `status` enum('active','inactive','leave') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'active' COMMENT '状态',
   `current_team_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '当前队伍ID',
@@ -962,26 +966,26 @@ CREATE TABLE `users`  (
 -- ----------------------------
 -- Records of users
 -- ----------------------------
-INSERT INTO `users` VALUES ('0609948d-318d-418f-8c48-db729f4dbe5c', 'test_user_008', NULL, '吴涛', '吴涛', '/static/images/avatar/1.png', '13800138008', 11, '[\"前锋\"]', 'member', 'active', '281a79c2-e10a-4bfa-8dc8-def0b7b7580a', NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'regular');
-INSERT INTO `users` VALUES ('1b7a8b48-91aa-472d-90ed-fcdd92fdb21b', 'test_user_014', NULL, '吕超', '吕超', '/static/images/avatar/2.png', '13800138014', 17, '[\"前锋\"]', 'member', 'active', '281a79c2-e10a-4bfa-8dc8-def0b7b7580a', NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'regular');
-INSERT INTO `users` VALUES ('2f82d131-6e19-4fd3-9258-e514e1ae6e80', 'test_user_005', NULL, '陈浩', '陈浩', '/static/images/avatar/3.png', '13800138005', 9, '[\"前锋\"]', 'member', 'active', '281a79c2-e10a-4bfa-8dc8-def0b7b7580a', NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'regular');
-INSERT INTO `users` VALUES ('399a4992-d14e-488a-9ece-0e0f8f36f9be', 'test_user_013', NULL, '何斌', '何斌', '/static/images/avatar/4.png', '13800138013', 14, '[\"中场\",\"后卫\"]', 'member', 'active', '281a79c2-e10a-4bfa-8dc8-def0b7b7580a', NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'regular');
-INSERT INTO `users` VALUES ('3a6c64d0-b4d8-45da-903a-6d0e162df3d7', 'test_user_020', NULL, '邹涛', '邹涛', '/static/images/avatar/5.png', '13800138020', 16, '[\"前锋\"]', 'member', 'active', '281a79c2-e10a-4bfa-8dc8-def0b7b7580a', NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'regular');
-INSERT INTO `users` VALUES ('428549ce-ad21-49f3-b00a-c0e9943fb0f3', 'test_user_004', NULL, '刘洋', '刘洋', '/static/images/avatar/6.png', '13800138004', 1, '[\"守门员\"]', 'member', 'active', '281a79c2-e10a-4bfa-8dc8-def0b7b7580a', NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'regular');
-INSERT INTO `users` VALUES ('44e4d614-0a57-4d14-9fc2-47de3602a84b', 'okxVv1z1t0DVfyOyc-uL94jJEbYo', NULL, '小旋风', '刘立希', '/static/images/avatar/21.png', '13131313131', 66, '[\"LB,RB,LW,RW\"]', 'member', 'active', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', NULL, '2025-10-22 08:42:45', '2025-10-23 17:37:03', 'temporary');
-INSERT INTO `users` VALUES ('4abd69c8-1df1-481b-8a0e-5cb64265ff44', 'test_user_012', NULL, '许辉', '许辉', '/static/images/avatar/7.png', '13800138012', 15, '[\"中场\"]', 'member', 'active', '281a79c2-e10a-4bfa-8dc8-def0b7b7580a', NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'regular');
-INSERT INTO `users` VALUES ('53b7cd6e-8cc6-4c4d-8b56-8fe53b80855f', 'test_user_006', NULL, '赵明', '赵明', '/static/images/avatar/8.png', '13800138006', 8, '[\"中场\",\"前锋\"]', 'member', 'active', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'regular');
-INSERT INTO `users` VALUES ('6c97ae03-23a1-4e8d-a6ca-54ef1d93d9a4', 'test_user_019', NULL, '谭斌', '谭斌', '/static/images/avatar/9.png', '13800138019', 13, '[\"中场\"]', 'member', 'active', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'regular');
-INSERT INTO `users` VALUES ('6e66bed9-3d63-45f9-9576-80dce9aa3f1a', 'test_user_003', NULL, '王磊', '王磊', '/static/images/avatar/10.png', '13800138003', 5, '[\"后卫\"]', 'member', 'active', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'regular');
-INSERT INTO `users` VALUES ('8d07fd09-38d7-452f-9ea2-b74b22e616f9', 'test_user_010', NULL, '郑凯', '郑凯', '/static/images/avatar/11.png', '13800138010', 4, '[\"后卫\"]', 'member', 'active', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'regular');
-INSERT INTO `users` VALUES ('8f0b0665-0aac-4935-85c3-5e9c17f17e48', 'test_user_011', NULL, '冯军', '冯军', '/static/images/avatar/12.png', '13800138011', 2, '[\"后卫\"]', 'member', 'active', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'regular');
-INSERT INTO `users` VALUES ('a1aba0f0-f58a-44a1-a351-365d8e8545ff', 'test_user_018', NULL, '崔建', '崔建', '/static/images/avatar/13.png', '13800138018', 20, '[\"后卫\"]', 'member', 'active', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'regular');
-INSERT INTO `users` VALUES ('b4660611-bfee-4eeb-a10b-d6f69fdfea6a', 'test_user_009', NULL, '孙鹏', '孙鹏', '/static/images/avatar/14.png', '13800138009', 3, '[\"后卫\"]', 'member', 'active', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'regular');
-INSERT INTO `users` VALUES ('c3c8aa05-e8dd-45ca-b56e-1901038b58d7', 'test_user_001', NULL, '张伟', '张伟', '/static/images/avatar/15.png', '13800138001', 7, '[\"前锋\"]', 'super_admin', 'active', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'regular');
-INSERT INTO `users` VALUES ('c70b3419-c3f8-49f7-bf07-e5ad0a8b992f', 'test_user_017', NULL, '姜华', '姜华', '/static/images/avatar/16.png', '13800138017', 19, '[\"前锋\",\"中场\"]', 'member', 'active', NULL, NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'temporary');
-INSERT INTO `users` VALUES ('d647d8d2-291a-46e7-a388-76bb7c5588b2', 'test_user_015', NULL, '丁勇', '丁勇', '/static/images/avatar/17.png', '13800138015', 12, '[\"守门员\"]', 'member', 'active', NULL, NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'temporary');
-INSERT INTO `users` VALUES ('def6935d-e03a-454b-856d-730c091c3532', 'test_user_007', NULL, '周杰', '周杰', '/static/images/avatar/18.png', '13800138007', 6, '[\"后卫\",\"中场\"]', 'member', 'active', NULL, NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'regular');
-INSERT INTO `users` VALUES ('eb08d787-f522-44a0-a4db-d7f867fab92f', 'test_user_002', NULL, '李强', '李强', '/static/images/avatar/19.png', '13800138002', 10, '[\"中场\"]', 'member', 'active', NULL, NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'regular');
-INSERT INTO `users` VALUES ('fd5cc8a1-2e7b-44f6-829c-38131a338f82', 'test_user_016', NULL, '任飞', '任飞', '/static/images/avatar/20.png', '13800138016', 18, '[\"中场\"]', 'member', 'active', NULL, NULL, '2025-10-22 08:40:58', '2025-10-22 21:44:14', 'temporary');
+INSERT INTO `users` VALUES ('0609948d-318d-418f-8c48-db729f4dbe5c', 'test_user_008', NULL, '吴涛', '吴涛', '/static/images/avatar/1.png', '13800138008', 11, '[\"ST\"]', 3, 5, 'member', 'active', '281a79c2-e10a-4bfa-8dc8-def0b7b7580a', NULL, '2025-10-22 08:40:58', '2025-11-04 00:30:40', 'regular');
+INSERT INTO `users` VALUES ('1b7a8b48-91aa-472d-90ed-fcdd92fdb21b', 'test_user_014', NULL, '吕超', '吕超', '/static/images/avatar/2.png', '13800138014', 17, '[\"ST\"]', 5, 3, 'member', 'active', '281a79c2-e10a-4bfa-8dc8-def0b7b7580a', NULL, '2025-10-22 08:40:58', '2025-11-04 00:43:41', 'regular');
+INSERT INTO `users` VALUES ('2f82d131-6e19-4fd3-9258-e514e1ae6e80', 'test_user_005', NULL, '陈浩', '陈浩', '/static/images/avatar/3.png', '13800138005', 9, '[\"RW\"]', 3, 5, 'member', 'active', '281a79c2-e10a-4bfa-8dc8-def0b7b7580a', NULL, '2025-10-22 08:40:58', '2025-11-04 00:43:41', 'regular');
+INSERT INTO `users` VALUES ('399a4992-d14e-488a-9ece-0e0f8f36f9be', 'test_user_013', NULL, '何斌', '何斌', '/static/images/avatar/4.png', '13800138013', 14, '[\"CAM\",\"RB\"]', 5, 4, 'member', 'active', '281a79c2-e10a-4bfa-8dc8-def0b7b7580a', NULL, '2025-10-22 08:40:58', '2025-11-04 00:43:41', 'regular');
+INSERT INTO `users` VALUES ('3a6c64d0-b4d8-45da-903a-6d0e162df3d7', 'test_user_020', NULL, '邹涛', '邹涛', '/static/images/avatar/5.png', '13800138020', 16, '[\"ST\"]', 5, 1, 'member', 'active', '281a79c2-e10a-4bfa-8dc8-def0b7b7580a', NULL, '2025-10-22 08:40:58', '2025-11-04 00:30:40', 'regular');
+INSERT INTO `users` VALUES ('428549ce-ad21-49f3-b00a-c0e9943fb0f3', 'test_user_004', NULL, '刘洋', '刘洋', '/static/images/avatar/6.png', '13800138004', 1, '[\"CM\"]', 5, 4, 'member', 'active', '281a79c2-e10a-4bfa-8dc8-def0b7b7580a', NULL, '2025-10-22 08:40:58', '2025-11-04 00:30:40', 'regular');
+INSERT INTO `users` VALUES ('44e4d614-0a57-4d14-9fc2-47de3602a84b', 'okxVv1z1t0DVfyOyc-uL94jJEbYo', NULL, '小旋风', '刘立希', '/static/images/avatar/21.png', '13131313131', 66, '[\"LB\",\"RB\",\"RW\",\"LW\"]', 1, 5, 'member', 'active', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', NULL, '2025-10-22 08:42:45', '2025-11-04 21:45:00', 'temporary');
+INSERT INTO `users` VALUES ('4abd69c8-1df1-481b-8a0e-5cb64265ff44', 'test_user_012', NULL, '许辉', '许辉', '/static/images/avatar/7.png', '13800138012', 15, '[\"CAM\"]', 5, 4, 'member', 'active', '281a79c2-e10a-4bfa-8dc8-def0b7b7580a', NULL, '2025-10-22 08:40:58', '2025-11-04 00:30:40', 'regular');
+INSERT INTO `users` VALUES ('53b7cd6e-8cc6-4c4d-8b56-8fe53b80855f', 'test_user_006', NULL, '赵明', '赵明', '/static/images/avatar/8.png', '13800138006', 8, '[\"CDM\",\"CF\"]', 4, 5, 'member', 'active', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', NULL, '2025-10-22 08:40:58', '2025-11-04 00:43:41', 'regular');
+INSERT INTO `users` VALUES ('6c97ae03-23a1-4e8d-a6ca-54ef1d93d9a4', 'test_user_019', NULL, '谭斌', '谭斌', '/static/images/avatar/9.png', '13800138019', 13, '[\"CAM\"]', 4, 5, 'member', 'active', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', NULL, '2025-10-22 08:40:58', '2025-11-04 00:43:41', 'regular');
+INSERT INTO `users` VALUES ('6e66bed9-3d63-45f9-9576-80dce9aa3f1a', 'test_user_003', NULL, '王磊', '王磊', '/static/images/avatar/10.png', '13800138003', 5, '[\"LB\"]', 5, 2, 'member', 'active', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', NULL, '2025-10-22 08:40:58', '2025-11-04 00:43:41', 'regular');
+INSERT INTO `users` VALUES ('8d07fd09-38d7-452f-9ea2-b74b22e616f9', 'test_user_010', NULL, '郑凯', '郑凯', '/static/images/avatar/11.png', '13800138010', 4, '[\"CB\"]', 5, 4, 'member', 'active', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', NULL, '2025-10-22 08:40:58', '2025-11-04 00:43:41', 'regular');
+INSERT INTO `users` VALUES ('8f0b0665-0aac-4935-85c3-5e9c17f17e48', 'test_user_011', NULL, '冯军', '冯军', '/static/images/avatar/12.png', '13800138011', 2, '[\"LB\"]', 1, 5, 'member', 'active', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', NULL, '2025-10-22 08:40:58', '2025-11-04 00:43:41', 'regular');
+INSERT INTO `users` VALUES ('a1aba0f0-f58a-44a1-a351-365d8e8545ff', 'test_user_018', NULL, '崔建', '崔建', '/static/images/avatar/13.png', '13800138018', 20, '[\"LB\"]', 5, 4, 'member', 'active', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', NULL, '2025-10-22 08:40:58', '2025-11-04 00:43:41', 'regular');
+INSERT INTO `users` VALUES ('b4660611-bfee-4eeb-a10b-d6f69fdfea6a', 'test_user_009', NULL, '孙鹏', '孙鹏', '/static/images/avatar/14.png', '13800138009', 3, '[\"LB\"]', 5, 4, 'member', 'active', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', NULL, '2025-10-22 08:40:58', '2025-11-04 00:43:41', 'regular');
+INSERT INTO `users` VALUES ('c3c8aa05-e8dd-45ca-b56e-1901038b58d7', 'test_user_001', NULL, '张伟', '张伟', '/static/images/avatar/15.png', '13800138001', 7, '[\"RW\"]', 4, 5, 'super_admin', 'active', 'b6ab3e9b-7bd7-468f-ae54-51c7675831e3', NULL, '2025-10-22 08:40:58', '2025-11-04 00:43:41', 'regular');
+INSERT INTO `users` VALUES ('c70b3419-c3f8-49f7-bf07-e5ad0a8b992f', 'test_user_017', NULL, '姜华', '姜华', '/static/images/avatar/16.png', '13800138017', 19, '[\"LW\",\"CDM\"]', 2, 5, 'member', 'active', NULL, NULL, '2025-10-22 08:40:58', '2025-11-04 00:43:41', 'temporary');
+INSERT INTO `users` VALUES ('d647d8d2-291a-46e7-a388-76bb7c5588b2', 'test_user_015', NULL, '丁勇', '丁勇', '/static/images/avatar/17.png', '13800138015', 12, '[\"CM\"]', 5, 5, 'member', 'active', NULL, NULL, '2025-10-22 08:40:58', '2025-11-04 00:30:40', 'temporary');
+INSERT INTO `users` VALUES ('def6935d-e03a-454b-856d-730c091c3532', 'test_user_007', NULL, '周杰', '周杰', '/static/images/avatar/18.png', '13800138007', 6, '[\"CB\",\"CAM\"]', 5, 3, 'member', 'active', NULL, NULL, '2025-10-22 08:40:58', '2025-11-04 00:43:41', 'regular');
+INSERT INTO `users` VALUES ('eb08d787-f522-44a0-a4db-d7f867fab92f', 'test_user_002', NULL, '李强', '李强', '/static/images/avatar/19.png', '13800138002', 10, '[\"CAM\"]', 5, 0, 'member', 'active', NULL, NULL, '2025-10-22 08:40:58', '2025-11-04 00:43:41', 'regular');
+INSERT INTO `users` VALUES ('fd5cc8a1-2e7b-44f6-829c-38131a338f82', 'test_user_016', NULL, '任飞', '任飞', '/static/images/avatar/20.png', '13800138016', 18, '[\"CAM\"]', 5, 3, 'member', 'active', NULL, NULL, '2025-10-22 08:40:58', '2025-11-04 00:43:41', 'temporary');
 
 SET FOREIGN_KEY_CHECKS = 1;
