@@ -13,6 +13,7 @@ const seasonRoutes = require('./season');
 const uploadRoutes = require('./upload');
 const achievementRoutes = require('./achievement');
 const notificationRoutes = require('./notification');
+const visitRoutes = require('./visit');
 
 // API版本前缀
 const API_PREFIX = '/api';
@@ -41,6 +42,7 @@ router.use(`${API_PREFIX}/season`, seasonRoutes.routes(), seasonRoutes.allowedMe
 router.use(`${API_PREFIX}/upload`, uploadRoutes.routes(), uploadRoutes.allowedMethods());
 router.use(`${API_PREFIX}/achievement`, achievementRoutes.routes(), achievementRoutes.allowedMethods());
 router.use(`${API_PREFIX}/notification`, notificationRoutes.routes(), notificationRoutes.allowedMethods());
+router.use(`${API_PREFIX}/visit`, visitRoutes.routes(), visitRoutes.allowedMethods());
 // 4节制比赛路由直接注册到 /api 下，因为路由定义中已包含 /match 前缀
 router.use(`${API_PREFIX}`, quarterRoutes.routes(), quarterRoutes.allowedMethods());
 

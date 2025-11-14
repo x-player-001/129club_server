@@ -1753,6 +1753,184 @@ GET /api/stats/ranking/goals
 
 ---
 
+## 11. 访问记录模块 `/api/visit`
+
+### 11.1 记录用户访问
+- **接口**: `POST /api/visit/record`
+- **权限**: 需要认证
+- **说明**: 记录用户进入小程序的访问日志，应在小程序 `app.js` 的 `onLaunch` 或 `onShow` 中调用
+- **请求参数**:
+```json
+{
+  "platform": "ios",              // 平台：ios/android/devtools
+  "appVersion": "1.0.0",          // 小程序版本号（可选）
+  "scene": 1001,                  // 场景值（可选）
+  "deviceModel": "iPhone 13",     // 设备型号（可选）
+  "systemVersion": "iOS 15.0"     // 系统版本（可选）
+}
+```
+- **响应示例**:
+```json
+{
+  "code": 0,
+  "success": true,
+  "message": "访问记录成功",
+  "data": {
+    "visitTime": "2025-01-20T10:30:00.000Z",
+    "totalVisits": 25
+  }
+}
+```
+
+### 11.2 获取个人访问统计
+- **接口**: `GET /api/visit/stats`
+- **权限**: 需要认证
+- **查询参数**:
+  - `days` (可选): 统计最近N天，默认30天
+- **响应示例**:
+```json
+{
+  "code": 0,
+  "success": true,
+  "data": {
+    "totalVisits": 125,
+    "lastVisitAt": "2025-01-20T10:30:00.000Z",
+    "recentVisits": {
+      "last7Days": 15,
+      "last30Days": 125
+    },
+    "dailyStats": [
+      {
+        "date": "2025-01-20",
+        "count": 3
+      },
+      {
+        "date": "2025-01-19",
+        "count": 5
+      }
+    ],
+    "visitList": [
+      {
+        "id": "log-uuid-1",
+        "visitTime": "2025-01-20T10:30:00.000Z",
+        "platform": "ios",
+        "appVersion": "1.0.0",
+        "scene": 1001,
+        "deviceModel": "iPhone 13",
+        "systemVersion": "iOS 15.0"
+      }
+    ]
+  }
+}
+```
+
+### 11.3 获取活跃用户统计（管理员）
+- **接口**: `GET /api/visit/active-users`
+- **权限**: 需要认证（管理员）
+- **查询参数**:
+  - `days` (可选): 统计最近N天，默认7天
+  - `limit` (可选): 返回活跃用户数量限制，默认20
+- **响应示例**:
+```json
+{
+  "code": 0,
+  "success": true,
+  "data": {
+    "activeUserCount": 45,
+    "todayActiveCount": 12,
+    "activeUsers": [
+      {
+        "userId": "user-uuid-1",
+        "visitCount": 25,
+        "lastVisitAt": "2025-01-20T10:30:00.000Z",
+        "user": {
+          "id": "user-uuid-1",
+          "nickname": "张三",
+          "realName": "张三",
+          "avatar": "https://..."
+        }
+      }
+    ]
+  }
+}
+```
+
+### 小程序集成示例
+
+在小程序的 `app.js` 中添加访问记录：
+
+```javascript
+// app.js
+App({
+  onLaunch: function(options) {
+    // 用户登录后调用访问记录接口
+    this.recordVisit(options);
+  },
+
+  onShow: function(options) {
+    // 可选：每次显示时也记录访问
+    // this.recordVisit(options);
+  },
+
+  recordVisit: function(options) {
+    const token = wx.getStorageSync('token');
+    if (!token) {
+      console.log('未登录，跳过访问记录');
+      return;
+    }
+
+    // 获取系统信息
+    wx.getSystemInfo({
+      success: (systemInfo) => {
+        // 记录访问
+        wx.request({
+          url: 'https://your-api-domain.com/api/visit/record',
+          method: 'POST',
+          header: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          data: {
+            platform: systemInfo.platform,         // ios/android/devtools
+            appVersion: this.globalData.version,   // 小程序版本号
+            scene: options.scene,                  // 场景值
+            deviceModel: systemInfo.model,         // 设备型号
+            systemVersion: systemInfo.system       // 系统版本
+          },
+          success: (res) => {
+            console.log('访问记录成功', res.data);
+          },
+          fail: (err) => {
+            console.error('访问记录失败', err);
+          }
+        });
+      }
+    });
+  },
+
+  globalData: {
+    version: '1.0.0'  // 小程序版本号
+  }
+});
+```
+
+**常见场景值 (scene) 说明**:
+- `1001`: 发现栏小程序主入口
+- `1005`: 顶部搜索框的搜索结果页
+- `1006`: 发现栏小程序主入口搜索框的搜索结果页
+- `1007`: 单人聊天会话中的消息卡片
+- `1008`: 群聊会话中的消息卡片
+- `1011`: 扫描二维码
+- `1012`: 长按图片识别二维码
+- `1013`: 手机相册选取二维码
+- `1047`: 扫描小程序码
+- `1048`: 长按图片识别小程序码
+- `1049`: 手机相册选取小程序码
+
+更多场景值请参考[微信官方文档](https://developers.weixin.qq.com/miniprogram/dev/reference/scene-list.html)
+
+---
+
 ## 注意事项
 
 1. **认证**: 大部分接口需要在请求头中携带JWT Token
@@ -1765,10 +1943,11 @@ GET /api/stats/ranking/goals
 
 ---
 
-**文档版本**: v1.7
-**更新日期**: 2025-10-17
-**已实现接口**: 38个
+**文档版本**: v1.8
+**更新日期**: 2025-01-20
+**已实现接口**: 41个
 **更新内容**:
+- v1.8 (2025-01-20): 新增访问记录模块，支持记录用户访问日志、查询个人访问统计、查询活跃用户统计（管理员），新增3个API接口
 - v1.7 (2025-10-17): 增加节次状态管理（status字段），支持标记节次为进行中/已完成，修正quartersCompleted统计逻辑，新增isCompleted参数
 - v1.6 (2025-10-17): AI简报解析改为异步任务模式，解决超时问题，新增任务状态查询接口，新增2个API接口
 - v1.5 (2025-10-17): 新增4节制比赛录入模块，支持碎片化录入（3种模式：overwrite/append/auto），新增5个API接口

@@ -19,6 +19,7 @@ const Season = require('./Season');
 const Achievement = require('./Achievement');
 const UserAchievement = require('./UserAchievement');
 const Notification = require('./Notification');
+const UserVisitLog = require('./UserVisitLog');
 
 // ====================================
 // 定义模型关联关系
@@ -137,6 +138,10 @@ UserAchievement.belongsTo(Match, { foreignKey: 'matchId', as: 'match' });
 // Notification 关联
 Notification.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
+// UserVisitLog 关联
+UserVisitLog.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+User.hasMany(UserVisitLog, { foreignKey: 'userId', as: 'visitLogs' });
+
 // ====================================
 // 导出所有模型
 // ====================================
@@ -161,5 +166,6 @@ module.exports = {
   Season,
   Achievement,
   UserAchievement,
-  Notification
+  Notification,
+  UserVisitLog
 };
