@@ -1,6 +1,7 @@
 const { UserVisitLog, User } = require('../models');
 const logger = require('../utils/logger');
 const { Op } = require('sequelize');
+const sequelize = require('../config/database');
 
 /**
  * 记录用户访问
@@ -20,8 +21,8 @@ exports.recordVisit = async (userId, visitInfo = {}) => {
 
     const today = new Date().toISOString().split('T')[0];
 
-    // 1. 创建访问日志
-    await UserVisitLog.create({
+    // 创建访问日志
+    const visitLog = await UserVisitLog.create({
       userId,
       visitDate: today,
       platform,
@@ -32,17 +33,16 @@ exports.recordVisit = async (userId, visitInfo = {}) => {
       systemVersion
     });
 
-    // 2. 更新用户表的访问统计
-    const user = await User.findByPk(userId);
-    if (user) {
-      await user.update({
-        lastVisitAt: new Date(),
-        visitCount: (user.visitCount || 0) + 1
-      });
-    }
-
     logger.info(`User visit recorded: ${userId}, platform: ${platform}`);
-    return { success: true };
+
+    // 返回当前总访问次数
+    const totalVisits = await UserVisitLog.count({ where: { userId } });
+
+    return {
+      success: true,
+      visitTime: visitLog.visitTime,
+      totalVisits
+    };
   } catch (error) {
     logger.error(`Record visit failed: ${error.message}`);
     throw error;
@@ -60,39 +60,66 @@ exports.getUserVisitStats = async (userId, params = {}) => {
 
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
+    const startDateStr = startDate.toISOString().split('T')[0];
 
-    // 查询指定天数内的访问记录
-    const visits = await UserVisitLog.findAll({
+    // 1. 获取总访问次数和最后访问时间
+    const totalStats = await UserVisitLog.findOne({
+      attributes: [
+        [sequelize.fn('COUNT', sequelize.col('id')), 'totalVisits'],
+        [sequelize.fn('MAX', sequelize.col('visit_time')), 'lastVisitAt']
+      ],
+      where: { userId },
+      raw: true
+    });
+
+    // 2. 获取最近N天的访问记录
+    const recentVisits = await UserVisitLog.findAll({
       where: {
         userId,
         visitDate: {
-          [Op.gte]: startDate.toISOString().split('T')[0]
+          [Op.gte]: startDateStr
         }
       },
       order: [['visit_time', 'DESC']]
     });
 
-    // 按日期分组统计
-    const dailyStats = {};
-    visits.forEach(visit => {
-      const date = visit.visitDate;
-      if (!dailyStats[date]) {
-        dailyStats[date] = 0;
+    // 3. 统计最近7天和30天的访问次数
+    const last7Days = new Date();
+    last7Days.setDate(last7Days.getDate() - 7);
+    const last7DaysStr = last7Days.toISOString().split('T')[0];
+
+    const last7DaysCount = await UserVisitLog.count({
+      where: {
+        userId,
+        visitDate: { [Op.gte]: last7DaysStr }
       }
-      dailyStats[date]++;
     });
 
-    // 获取用户总访问次数
-    const user = await User.findByPk(userId, {
-      attributes: ['visitCount', 'lastVisitAt']
+    const last30DaysCount = recentVisits.length;
+
+    // 4. 按日期分组统计
+    const dailyStatsMap = {};
+    recentVisits.forEach(visit => {
+      const date = visit.visitDate;
+      if (!dailyStatsMap[date]) {
+        dailyStatsMap[date] = 0;
+      }
+      dailyStatsMap[date]++;
     });
+
+    const dailyStats = Object.entries(dailyStatsMap)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => b.date.localeCompare(a.date));
 
     return {
-      totalVisits: user?.visitCount || 0,
-      lastVisitAt: user?.lastVisitAt,
-      recentVisits: visits.length,
+      totalVisits: parseInt(totalStats?.totalVisits) || 0,
+      lastVisitAt: totalStats?.lastVisitAt || null,
+      recentVisits: {
+        last7Days: last7DaysCount,
+        last30Days: last30DaysCount
+      },
       dailyStats,
-      visitList: visits.slice(0, 10) // 最近10条
+      visitList: recentVisits.slice(0, 20) // 最近20条
     };
   } catch (error) {
     logger.error(`Get visit stats failed: ${error.message}`);
@@ -101,38 +128,41 @@ exports.getUserVisitStats = async (userId, params = {}) => {
 };
 
 /**
- * 获取活跃用户统计
+ * 获取活跃用户统计（管理员）
  * @param {Object} params - 查询参数
  */
 exports.getActiveUsersStats = async (params = {}) => {
   try {
-    const { days = 7 } = params;
+    const { days = 7, limit = 20 } = params;
 
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
+    const startDateStr = startDate.toISOString().split('T')[0];
 
-    // 统计活跃用户（在指定天数内有访问记录）
+    // 1. 统计活跃用户（在指定天数内有访问记录）
     const activeUsers = await UserVisitLog.findAll({
       attributes: [
         'userId',
-        [sequelize.fn('COUNT', sequelize.col('id')), 'visitCount'],
-        [sequelize.fn('MAX', sequelize.col('visit_time')), 'lastVisit']
+        [sequelize.fn('COUNT', sequelize.col('UserVisitLog.id')), 'visitCount'],
+        [sequelize.fn('MAX', sequelize.col('visit_time')), 'lastVisitAt']
       ],
       where: {
         visitDate: {
-          [Op.gte]: startDate.toISOString().split('T')[0]
+          [Op.gte]: startDateStr
         }
       },
-      group: ['userId'],
-      order: [[sequelize.fn('COUNT', sequelize.col('id')), 'DESC']],
+      group: ['userId', 'user.id'],
+      order: [[sequelize.fn('COUNT', sequelize.col('UserVisitLog.id')), 'DESC']],
+      limit: limit,
       include: [{
         model: User,
         as: 'user',
-        attributes: ['nickname', 'realName', 'avatar']
-      }]
+        attributes: ['id', 'nickname', 'realName', 'avatar']
+      }],
+      subQuery: false
     });
 
-    // 今日活跃用户
+    // 2. 今日活跃用户数
     const today = new Date().toISOString().split('T')[0];
     const todayActiveCount = await UserVisitLog.count({
       distinct: true,
@@ -140,10 +170,18 @@ exports.getActiveUsersStats = async (params = {}) => {
       where: { visitDate: today }
     });
 
+    // 3. 格式化结果
+    const formattedUsers = activeUsers.map(item => ({
+      userId: item.userId,
+      visitCount: parseInt(item.get('visitCount')),
+      lastVisitAt: item.get('lastVisitAt'),
+      user: item.user
+    }));
+
     return {
       activeUserCount: activeUsers.length,
       todayActiveCount,
-      activeUsers: activeUsers.slice(0, 50) // 前50名
+      activeUsers: formattedUsers
     };
   } catch (error) {
     logger.error(`Get active users stats failed: ${error.message}`);

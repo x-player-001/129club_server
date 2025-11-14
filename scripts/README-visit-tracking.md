@@ -2,19 +2,24 @@
 
 ## 功能概述
 
-访问记录功能用于跟踪用户进入小程序的行为，包括访问时间、访问次数、设备信息、场景值等。采用**混合方案**实现：
+访问记录功能用于跟踪用户进入小程序的行为，包括访问时间、访问次数、设备信息、场景值等。
 
-1. **轻量级统计** - 在 `users` 表中存储快速访问字段：
-   - `last_visit_at`: 最后访问时间
-   - `visit_count`: 累计访问次数
+## 设计方案
 
-2. **详细日志** - 在 `user_visit_logs` 表中存储详细访问记录：
-   - 访问时间戳
-   - 平台信息（iOS/Android/devtools）
-   - 小程序版本号
-   - 场景值（从哪里进入）
-   - 设备型号和系统版本
-   - IP地址
+采用**纯日志方案**，所有数据存储在 `user_visit_logs` 表中：
+
+- ✅ 数据单一来源，避免不一致
+- ✅ 永久保留所有访问记录
+- ✅ 所有统计通过聚合查询实时计算
+- ✅ 支持详细分析：按日期、平台、场景等维度
+
+**表结构**：
+- 访问时间戳和日期
+- 平台信息（iOS/Android/devtools）
+- 小程序版本号
+- 场景值（从哪里进入）
+- 设备型号和系统版本
+- IP地址
 
 ## 数据库部署
 
@@ -25,33 +30,10 @@
 mysql -u root -p 129club < scripts/add-visit-tracking.sql
 ```
 
-或者手动执行 SQL：
-
-```sql
--- 添加用户表字段
-ALTER TABLE `users`
-ADD COLUMN `last_visit_at` TIMESTAMP NULL COMMENT '最后访问时间',
-ADD COLUMN `visit_count` INT UNSIGNED DEFAULT 0 COMMENT '累计访问次数';
-
--- 创建访问日志表
-CREATE TABLE `user_visit_logs` (
-  `id` VARCHAR(36) PRIMARY KEY,
-  `user_id` VARCHAR(36) NOT NULL,
-  `visit_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `visit_date` DATE NOT NULL,
-  `platform` VARCHAR(20) NULL COMMENT '平台（iOS/Android/devtools）',
-  `app_version` VARCHAR(20) NULL,
-  `scene` INT NULL COMMENT '场景值',
-  `ip_address` VARCHAR(50) NULL,
-  `device_model` VARCHAR(50) NULL,
-  `system_version` VARCHAR(50) NULL,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX `idx_user_id` (`user_id`),
-  INDEX `idx_visit_date` (`visit_date`),
-  INDEX `idx_visit_time` (`visit_time`),
-  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户访问日志表';
-```
+**说明**：
+- 迁移脚本会自动创建 `user_visit_logs` 表
+- 不会修改 `users` 表，保持表结构简洁
+- 外键使用 `utf8mb4_0900_ai_ci` 字符集，与现有数据库一致
 
 ### 2. 验证部署
 
@@ -212,11 +194,18 @@ ORDER BY total_visits DESC;
 
 ## 常见问题
 
-### Q: 为什么需要同时记录 users 表和 user_visit_logs 表？
+### Q: 为什么使用纯日志方案而不是在 users 表添加字段？
 
-A: 混合方案兼顾性能和功能：
-- `users` 表字段用于快速查询最后访问时间和总访问次数
-- `user_visit_logs` 表用于详细分析（时间趋势、设备分布、场景分析）
+A: 纯日志方案的优势：
+- ✅ 数据单一来源，不会出现不一致
+- ✅ 永久保留所有记录，可以回溯任意时间段的数据
+- ✅ 支持复杂分析：平台分布、场景分析、时间趋势等
+- ✅ 表结构简洁，users 表不膨胀
+
+性能方面：
+- 通过 `user_id`、`visit_date`、`visit_time` 索引优化查询
+- 聚合查询在合理数据量下性能良好
+- 如需极致性能，可使用 Redis 缓存统计结果
 
 ### Q: 如何防止重复记录？
 
@@ -264,6 +253,26 @@ console.log('今日活跃用户数:', stats.todayActiveCount);
 - `src/routes/visit.js` - 路由定义
 - `API文档.md` - API接口文档（第11章）
 
+## 数据保留策略
+
+本系统采用**永久保留**策略，不自动清理访问日志。如需手动清理，可以：
+
+```javascript
+// 通过 API 清理（需要在代码中调用）
+const visitService = require('./src/services/visit.service');
+await visitService.cleanOldVisitLogs(90);  // 清理90天前的日志
+```
+
+或直接执行 SQL：
+
+```sql
+-- 清理指定日期前的记录
+DELETE FROM user_visit_logs WHERE visit_date < '2024-01-01';
+```
+
+**注意**：清理日志后，历史总访问次数会减少。
+
 ## 更新日志
 
-- **2025-01-20**: 初始版本实现，包含访问记录、统计查询、活跃用户分析功能
+- **2025-01-20 v2**: 简化为纯日志方案，移除 users 表冗余字段，所有统计通过聚合查询
+- **2025-01-20 v1**: 初始版本实现（混合方案，已废弃）

@@ -1755,10 +1755,12 @@ GET /api/stats/ranking/goals
 
 ## 11. 访问记录模块 `/api/visit`
 
+**设计说明**：本模块采用纯日志方案，仅使用 `user_visit_logs` 表存储所有访问记录，所有统计数据通过聚合查询实时计算，永久保留访问日志。
+
 ### 11.1 记录用户访问
 - **接口**: `POST /api/visit/record`
 - **权限**: 需要认证
-- **说明**: 记录用户进入小程序的访问日志，应在小程序 `app.js` 的 `onLaunch` 或 `onShow` 中调用
+- **说明**: 记录用户进入小程序的访问日志，应在小程序 `app.js` 的 `onLaunch` 或 `onShow` 中调用。每次调用会插入一条新记录到 `user_visit_logs` 表
 - **请求参数**:
 ```json
 {

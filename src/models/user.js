@@ -121,19 +121,6 @@ const User = sequelize.define('User', {
     field: 'join_date',
     comment: '加入日期'
   },
-  lastVisitAt: {
-    type: DataTypes.DATE,
-    allowNull: true,
-    field: 'last_visit_at',
-    comment: '最后访问时间'
-  },
-  visitCount: {
-    type: DataTypes.INTEGER.UNSIGNED,
-    allowNull: true,
-    defaultValue: 0,
-    field: 'visit_count',
-    comment: '累计访问次数'
-  },
   createdAt: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
