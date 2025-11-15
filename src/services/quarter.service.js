@@ -4,12 +4,12 @@ const sequelize = require('../config/database');
 
 /**
  * 4节制计分规则
- * 第1、2节获胜得1分，第3、4节获胜得2分
+ * 第1、2、3节获胜各得1分，第4节获胜得2分
  */
 const QUARTER_POINTS = {
   1: { win: 1, draw: 0 },
   2: { win: 1, draw: 0 },
-  3: { win: 2, draw: 0 },
+  3: { win: 1, draw: 0 },
   4: { win: 2, draw: 0 }
 };
 
