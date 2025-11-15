@@ -949,7 +949,24 @@ GET /match/list?status=completed&teamId=team-uuid
       "team1": [...],
       "team2": [...]
     },
-    "result": {...}
+    "result": {
+      "id": "result-uuid",
+      "matchId": "match-uuid",
+      "quarterSystem": true,
+      "team1Score": 6,
+      "team2Score": 6,
+      "team1FinalScore": 2,
+      "team2FinalScore": 2,
+      "team1TotalGoals": 6,
+      "team2TotalGoals": 6,
+      "winnerTeamId": "team1-uuid",
+      "penaltyShootout": true,
+      "team1PenaltyScore": 4,
+      "team2PenaltyScore": 3,
+      "penaltyWinnerTeamId": "team1-uuid",
+      "mvpUserIds": ["player1-uuid"],
+      "summary": "精彩的比赛"
+    }
   },
   "timestamp": 1760627200000
 }
@@ -1147,22 +1164,85 @@ const pollTask = setInterval(async () => {
 }, 2000); // 每2秒轮询一次
 ```
 
+### 4.7 补充比赛结果（MVP、总结、点球大战）
+- **接口**: `POST /match/:matchId/supplement-result`
+- **权限**: 需要登录
+- **说明**: 在完成4节比赛录入后，补充MVP、比赛总结、点球大战等信息
+- **请求参数**:
+```json
+{
+  "mvpUserIds": ["player1-uuid", "player2-uuid"],
+  "summary": "精彩的比赛，双方实力相当",
+  "penaltyShootout": {
+    "team1Score": 3,
+    "team2Score": 5
+  }
+}
+```
+
+**参数说明**:
+- `mvpUserIds`: MVP球员ID数组（可选）
+- `summary`: 比赛总结（可选）
+- `penaltyShootout`: 点球大战信息（可选，仅当4节比赛平局时使用）
+  - `team1Score`: 队伍1点球得分
+  - `team2Score`: 队伍2点球得分
+
+**响应示例**:
+```json
+{
+  "code": 0,
+  "success": true,
+  "message": "操作成功",
+  "data": {
+    "result": {
+      "id": "result-uuid",
+      "matchId": "match-uuid",
+      "quarterSystem": true,
+      "team1Score": 6,
+      "team2Score": 6,
+      "team1FinalScore": 2,
+      "team2FinalScore": 2,
+      "team1TotalGoals": 6,
+      "team2TotalGoals": 6,
+      "winnerTeamId": "team2-uuid",
+      "penaltyShootout": true,
+      "team1PenaltyScore": 3,
+      "team2PenaltyScore": 5,
+      "penaltyWinnerTeamId": "team2-uuid",
+      "mvpUserIds": ["player1-uuid", "player2-uuid"],
+      "summary": "精彩的比赛，双方实力相当",
+      "submittedBy": "user-uuid",
+      "submittedAt": "2025-10-15T18:00:00.000Z"
+    }
+  },
+  "timestamp": 1760628000000
+}
+```
+
+**说明**:
+- 当4节比赛结束后得分平局时，可通过点球大战决出胜负
+- 点球大战的获胜方将成为最终的 `winnerTeamId`
+- 同时会记录 `penaltyWinnerTeamId` 以区分常规时间获胜和点球获胜
+- 前端负责判断是否需要点球大战，后端仅存储数据
+
+---
+
 ### 4节制计分规则说明
 
 **得分规则**:
 - 第1节：获胜得1分，平局得0分
 - 第2节：获胜得1分，平局得0分
-- 第3节：获胜得2分，平局得0分
+- 第3节：获胜得1分，平局得0分
 - 第4节：获胜得2分，平局得0分
 
 **示例**:
 ```
 第1节: 红队 2-1 蓝队  →  红队 +1分
 第2节: 红队 1-1 蓝队  →  平局，双方 +0分
-第3节: 红队 2-0 蓝队  →  红队 +2分
+第3节: 红队 2-0 蓝队  →  红队 +1分
 第4节: 红队 1-2 蓝队  →  蓝队 +2分
 
-最终得分: 红队 3分，蓝队 2分
+最终得分: 红队 2分，蓝队 2分（平局）
 最终进球: 红队 6球，蓝队 4球
 ```
 

@@ -35,6 +35,30 @@ const MatchResult = sequelize.define('MatchResult', {
     field: 'winner_team_id',
     comment: '获胜队伍ID'
   },
+  penaltyShootout: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    field: 'penalty_shootout',
+    comment: '是否进行点球大战'
+  },
+  team1PenaltyScore: {
+    type: DataTypes.INTEGER.UNSIGNED,
+    allowNull: true,
+    field: 'team1_penalty_score',
+    comment: '队伍1点球得分'
+  },
+  team2PenaltyScore: {
+    type: DataTypes.INTEGER.UNSIGNED,
+    allowNull: true,
+    field: 'team2_penalty_score',
+    comment: '队伍2点球得分'
+  },
+  penaltyWinnerTeamId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'penalty_winner_team_id',
+    comment: '点球大战获胜队伍ID'
+  },
   mvpUserIds: {
     type: DataTypes.JSON,
     allowNull: true,

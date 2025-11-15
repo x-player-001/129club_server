@@ -586,7 +586,7 @@ exports.getPlayerMatchStats = async (matchId) => {
  * @param {string} userId 提交者ID
  */
 exports.supplementQuarterResult = async (matchId, data, userId) => {
-  const { mvpUserIds, summary } = data;
+  const { mvpUserIds, summary, penaltyShootout } = data;
 
   // 验证比赛
   const match = await Match.findByPk(matchId);
@@ -617,9 +617,27 @@ exports.supplementQuarterResult = async (matchId, data, userId) => {
   const { team1FinalScore, team2FinalScore, team1TotalGoals, team2TotalGoals } =
     await getMatchCurrentScore(matchId);
 
-  // 判断获胜队伍
-  const winnerTeamId = team1FinalScore > team2FinalScore ? match.team1Id :
-                      (team2FinalScore > team1FinalScore ? match.team2Id : null);
+  // 判断获胜队伍（考虑点球大战）
+  let winnerTeamId = null;
+  let penaltyWinnerTeamId = null;
+
+  if (team1FinalScore > team2FinalScore) {
+    winnerTeamId = match.team1Id;
+  } else if (team2FinalScore > team1FinalScore) {
+    winnerTeamId = match.team2Id;
+  } else {
+    // 平局，检查是否有点球大战
+    if (penaltyShootout && penaltyShootout.team1Score !== undefined && penaltyShootout.team2Score !== undefined) {
+      if (penaltyShootout.team1Score > penaltyShootout.team2Score) {
+        penaltyWinnerTeamId = match.team1Id;
+        winnerTeamId = match.team1Id;  // 最终获胜者为点球获胜方
+      } else if (penaltyShootout.team2Score > penaltyShootout.team1Score) {
+        penaltyWinnerTeamId = match.team2Id;
+        winnerTeamId = match.team2Id;  // 最终获胜者为点球获胜方
+      }
+    }
+    // 如果没有点球或点球也平局（理论上不会），winnerTeamId 保持为 null
+  }
 
   // 查找或创建 match_results 记录
   let result = await MatchResult.findOne({ where: { matchId } });
@@ -634,6 +652,10 @@ exports.supplementQuarterResult = async (matchId, data, userId) => {
       team1TotalGoals,
       team2TotalGoals,
       winnerTeamId,
+      penaltyShootout: penaltyShootout ? true : false,
+      team1PenaltyScore: penaltyShootout ? penaltyShootout.team1Score : null,
+      team2PenaltyScore: penaltyShootout ? penaltyShootout.team2Score : null,
+      penaltyWinnerTeamId: penaltyWinnerTeamId,
       submittedBy: userId,
       submittedAt: new Date()
     });
@@ -649,6 +671,10 @@ exports.supplementQuarterResult = async (matchId, data, userId) => {
       team1TotalGoals,
       team2TotalGoals,
       winnerTeamId,
+      penaltyShootout: penaltyShootout ? true : false,
+      team1PenaltyScore: penaltyShootout ? penaltyShootout.team1Score : null,
+      team2PenaltyScore: penaltyShootout ? penaltyShootout.team2Score : null,
+      penaltyWinnerTeamId: penaltyWinnerTeamId,
       mvpUserIds: mvpUserIds || null,
       summary: summary || null,
       submittedBy: userId,
