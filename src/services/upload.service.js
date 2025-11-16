@@ -46,8 +46,16 @@ exports.uploadPhoto = async (file, category = 'match_photos') => {
     const relativeDir = path.join(category, String(year), month);
     const absoluteDir = path.join(__dirname, '../../uploads', relativeDir);
 
-    // 确保目录存在
-    await mkdir(absoluteDir, { recursive: true });
+    // 确保目录存在（同步创建，避免异步竞态条件）
+    try {
+      if (!fs.existsSync(absoluteDir)) {
+        fs.mkdirSync(absoluteDir, { recursive: true });
+        logger.info(`Created directory: ${absoluteDir}`);
+      }
+    } catch (mkdirError) {
+      logger.error(`Failed to create directory: ${absoluteDir}`, mkdirError);
+      throw new Error(`创建目录失败: ${mkdirError.message}`);
+    }
 
     // 生成唯一文件名：时间戳_随机数.ext
     const timestamp = Date.now();
@@ -302,8 +310,16 @@ exports.downloadAndSaveFile = async (fileUrl, category = 'user_avatars') => {
     const relativeDir = path.join(category, String(year), month);
     const absoluteDir = path.join(__dirname, '../../uploads', relativeDir);
 
-    // 确保目录存在
-    await mkdir(absoluteDir, { recursive: true });
+    // 确保目录存在（同步创建）
+    try {
+      if (!fs.existsSync(absoluteDir)) {
+        fs.mkdirSync(absoluteDir, { recursive: true });
+        logger.info(`Created directory: ${absoluteDir}`);
+      }
+    } catch (mkdirError) {
+      logger.error(`Failed to create directory: ${absoluteDir}`, mkdirError);
+      throw new Error(`创建目录失败: ${mkdirError.message}`);
+    }
 
     // 生成唯一文件名：时间戳_随机数.ext
     const timestamp = Date.now();
