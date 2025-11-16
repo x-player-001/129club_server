@@ -22,6 +22,27 @@ exports.uploadPhoto = async (ctx) => {
 };
 
 /**
+ * 上传头像（专用接口）
+ */
+exports.uploadAvatar = async (ctx) => {
+  try {
+    // 支持 file 或 photo 字段名
+    const file = ctx.request.files?.file || ctx.request.files?.photo;
+
+    if (!file) {
+      return error(ctx, '请选择要上传的头像');
+    }
+
+    // 强制使用 user_avatars 分类
+    const result = await uploadService.uploadPhoto(file, 'user_avatars');
+
+    success(ctx, result, '头像上传成功');
+  } catch (err) {
+    error(ctx, err.message);
+  }
+};
+
+/**
  * 批量上传照片
  */
 exports.uploadPhotos = async (ctx) => {

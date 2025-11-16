@@ -8,6 +8,10 @@ const router = new Router();
 // POST /api/upload/photo
 router.post('/photo', authMiddleware, uploadController.uploadPhoto);
 
+// 上传头像（专用接口，自动设置分类为 user_avatars）
+// POST /api/upload/avatar
+router.post('/avatar', authMiddleware, uploadController.uploadAvatar);
+
 // 批量上传照片
 // POST /api/upload/photos
 router.post('/photos', authMiddleware, uploadController.uploadPhotos);

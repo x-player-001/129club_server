@@ -115,28 +115,30 @@ exports.login = async (code, userInfo = {}) => {
       defaults.nickname = userInfo.nickname;
     }
 
-    // 处理头像：如果是微信临时文件或微信头像URL，先下载保存
+    // 处理头像：只下载微信提供的头像URL
     if (userInfo.avatar) {
       const avatarUrl = userInfo.avatar;
 
-      if (avatarUrl.startsWith('http://tmp/') ||
-          avatarUrl.startsWith('https://thirdwx.qlogo.cn') ||
+      // 只处理微信官方头像URL（不包括 http://tmp/ 本地临时文件）
+      if (avatarUrl.startsWith('https://thirdwx.qlogo.cn') ||
           avatarUrl.startsWith('https://wx.qlogo.cn')) {
 
         try {
           const uploadService = require('./upload.service');
-          logger.info(`Downloading avatar for new user: ${avatarUrl}`);
+          logger.info(`Downloading WeChat avatar for new user: ${avatarUrl}`);
 
           const result = await uploadService.downloadAndSaveFile(avatarUrl, 'user_avatars');
           defaults.avatar = result.url;
 
-          logger.info(`Avatar downloaded successfully for new user: ${result.url}`);
+          logger.info(`WeChat avatar downloaded successfully: ${result.url}`);
         } catch (error) {
-          logger.error(`Failed to download avatar for new user: ${error.message}`);
+          logger.error(`Failed to download WeChat avatar: ${error.message}`);
           // 下载失败时使用原始URL
           defaults.avatar = avatarUrl;
         }
       } else {
+        // http://tmp/ 或其他URL直接保存
+        // 注意：http://tmp/ 是微信本地路径，会在缓存清理后失效
         defaults.avatar = avatarUrl;
       }
     }
@@ -156,25 +158,25 @@ exports.login = async (code, userInfo = {}) => {
       if (userInfo.avatar) {
         const avatarUrl = userInfo.avatar;
 
-        // 检测是否为微信临时文件或微信头像URL，自动下载保存
-        if (avatarUrl.startsWith('http://tmp/') ||
-            avatarUrl.startsWith('https://thirdwx.qlogo.cn') ||
+        // 只下载微信官方头像URL
+        if (avatarUrl.startsWith('https://thirdwx.qlogo.cn') ||
             avatarUrl.startsWith('https://wx.qlogo.cn')) {
 
           try {
             const uploadService = require('./upload.service');
-            logger.info(`Downloading avatar during login for user ${user.id}: ${avatarUrl}`);
+            logger.info(`Downloading WeChat avatar for user ${user.id}: ${avatarUrl}`);
 
             const result = await uploadService.downloadAndSaveFile(avatarUrl, 'user_avatars');
             updateData.avatar = result.url;
 
-            logger.info(`Avatar downloaded successfully during login: ${result.url}`);
+            logger.info(`WeChat avatar downloaded successfully: ${result.url}`);
           } catch (error) {
-            logger.error(`Failed to download avatar during login: ${error.message}`);
+            logger.error(`Failed to download WeChat avatar: ${error.message}`);
             // 下载失败时使用原始URL
             updateData.avatar = avatarUrl;
           }
         } else {
+          // http://tmp/ 或其他URL直接保存
           updateData.avatar = avatarUrl;
         }
       } else {
@@ -280,29 +282,29 @@ exports.updateUserInfo = async (userId, data) => {
     }
   });
 
-  // 特殊处理：如果更新头像且是微信临时文件，自动下载并保存
+  // 特殊处理：如果更新头像且是微信头像URL，自动下载并保存
   if (updateData.avatar) {
     const avatarUrl = updateData.avatar;
 
-    // 检测是否为微信临时文件路径或需要下载的URL
-    if (avatarUrl.startsWith('http://tmp/') ||
-        avatarUrl.startsWith('https://thirdwx.qlogo.cn') ||
+    // 只下载微信官方头像URL
+    if (avatarUrl.startsWith('https://thirdwx.qlogo.cn') ||
         avatarUrl.startsWith('https://wx.qlogo.cn')) {
 
       try {
         const uploadService = require('./upload.service');
-        logger.info(`Downloading avatar for user ${userId}: ${avatarUrl}`);
+        logger.info(`Downloading WeChat avatar for user ${userId}: ${avatarUrl}`);
 
         const result = await uploadService.downloadAndSaveFile(avatarUrl, 'user_avatars');
         updateData.avatar = result.url;
 
-        logger.info(`Avatar downloaded successfully: ${result.url}`);
+        logger.info(`WeChat avatar downloaded successfully: ${result.url}`);
       } catch (error) {
-        logger.error(`Failed to download avatar: ${error.message}`);
+        logger.error(`Failed to download WeChat avatar: ${error.message}`);
         // 下载失败时，仍然保存原始URL（降级处理）
         logger.warn(`Using original avatar URL as fallback: ${avatarUrl}`);
       }
     }
+    // 对于 http://tmp/ 路径，直接保存（前端应先上传到服务器）
   }
 
   await user.update(updateData);
