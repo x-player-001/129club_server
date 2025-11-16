@@ -53,8 +53,21 @@ exports.getSeasonList = async (params) => {
     offset: parseInt(offset)
   });
 
+  // 为每个赛季添加比赛数量
+  const listWithMatchCount = await Promise.all(
+    rows.map(async (season) => {
+      const matchCount = await Match.count({
+        where: { seasonId: season.id }
+      });
+      return {
+        ...season.toJSON(),
+        matchCount
+      };
+    })
+  );
+
   return {
-    list: rows,
+    list: listWithMatchCount,
     total: count,
     page: parseInt(page),
     limit: parseInt(limit),
