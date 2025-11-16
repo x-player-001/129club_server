@@ -73,7 +73,7 @@ exports.getSeasonDetail = async (seasonId) => {
     throw new Error('赛季不存在');
   }
 
-  // 获取该赛季的所有比赛
+  // 获取该赛季的所有比赛（包含比赛结果和点球数据）
   const matches = await Match.findAll({
     where: { seasonId },
     include: [
@@ -86,6 +86,19 @@ exports.getSeasonDetail = async (seasonId) => {
         model: Team,
         as: 'team2',
         attributes: ['id', 'name', 'logo']
+      },
+      {
+        model: MatchResult,
+        as: 'result',
+        attributes: [
+          'id', 'matchId', 'quarterSystem',
+          'team1Score', 'team2Score',
+          'team1FinalScore', 'team2FinalScore',
+          'team1TotalGoals', 'team2TotalGoals',
+          'winnerTeamId',
+          'penaltyShootout', 'team1PenaltyScore', 'team2PenaltyScore', 'penaltyWinnerTeamId',
+          'mvpUserIds', 'summary'
+        ]
       }
     ],
     order: [['matchDate', 'DESC']]
@@ -208,7 +221,7 @@ exports.getSeasonStatistics = async (seasonId) => {
         teamId: team1Id,
         teamName: match.team1.name,
         teamLogo: match.team1.logo,
-        totalScore: 0,
+        totalScore: 0,  // 总比分 = 胜场数
         totalGoals: 0,
         matchCount: 0,
         winCount: 0,
@@ -220,7 +233,7 @@ exports.getSeasonStatistics = async (seasonId) => {
         teamId: team2Id,
         teamName: match.team2.name,
         teamLogo: match.team2.logo,
-        totalScore: 0,
+        totalScore: 0,  // 总比分 = 胜场数
         totalGoals: 0,
         matchCount: 0,
         winCount: 0,
@@ -228,40 +241,39 @@ exports.getSeasonStatistics = async (seasonId) => {
       };
     }
 
-    // 累加积分和进球数（根据4节制或传统制）
+    // 累加进球数和胜负（根据4节制或传统制）
     if (match.quarterSystem && result) {
-      // 4节制：使用result中的team1FinalScore和team2FinalScore
-      teamStats[team1Id].totalScore += result.team1FinalScore || 0;
-      teamStats[team2Id].totalScore += result.team2FinalScore || 0;
+      // 4节制：使用result中的team1TotalGoals和team2TotalGoals
       teamStats[team1Id].totalGoals += result.team1TotalGoals || 0;
       teamStats[team2Id].totalGoals += result.team2TotalGoals || 0;
 
-      // 判断胜负
-      if (result.team1FinalScore > result.team2FinalScore) {
+      // 判断胜负（总比分 = 胜场数）
+      if (result.winnerTeamId === team1Id) {
         teamStats[team1Id].winCount++;
+        teamStats[team1Id].totalScore++;  // 胜场数+1
         teamStats[team2Id].loseCount++;
-      } else if (result.team1FinalScore < result.team2FinalScore) {
+      } else if (result.winnerTeamId === team2Id) {
         teamStats[team2Id].winCount++;
+        teamStats[team2Id].totalScore++;  // 胜场数+1
         teamStats[team1Id].loseCount++;
       }
+      // 如果winnerTeamId为null，则是平局，不增加totalScore
     } else {
       // 传统制：使用match中的finalTeam1Score和finalTeam2Score（进球数）
       teamStats[team1Id].totalGoals += match.finalTeam1Score || 0;
       teamStats[team2Id].totalGoals += match.finalTeam2Score || 0;
 
-      // 传统制积分规则：赢3分，平1分，输0分
+      // 传统制：赢则totalScore+1（胜场数）
       if (match.finalTeam1Score > match.finalTeam2Score) {
-        teamStats[team1Id].totalScore += 3;
         teamStats[team1Id].winCount++;
+        teamStats[team1Id].totalScore++;  // 胜场数+1
         teamStats[team2Id].loseCount++;
       } else if (match.finalTeam1Score < match.finalTeam2Score) {
-        teamStats[team2Id].totalScore += 3;
         teamStats[team2Id].winCount++;
+        teamStats[team2Id].totalScore++;  // 胜场数+1
         teamStats[team1Id].loseCount++;
-      } else {
-        teamStats[team1Id].totalScore += 1;
-        teamStats[team2Id].totalScore += 1;
       }
+      // 平局不增加totalScore
     }
 
     teamStats[team1Id].matchCount++;

@@ -22,7 +22,10 @@
       "Bash(git branch:*)",
       "Bash(git push:*)",
       "Bash(dir:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(git pull:*)",
+      "Bash(find:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []
