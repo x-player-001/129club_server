@@ -114,8 +114,31 @@ exports.login = async (code, userInfo = {}) => {
     if (userInfo.nickname) {
       defaults.nickname = userInfo.nickname;
     }
+
+    // 处理头像：如果是微信临时文件或微信头像URL，先下载保存
     if (userInfo.avatar) {
-      defaults.avatar = userInfo.avatar;
+      const avatarUrl = userInfo.avatar;
+
+      if (avatarUrl.startsWith('http://tmp/') ||
+          avatarUrl.startsWith('https://thirdwx.qlogo.cn') ||
+          avatarUrl.startsWith('https://wx.qlogo.cn')) {
+
+        try {
+          const uploadService = require('./upload.service');
+          logger.info(`Downloading avatar for new user: ${avatarUrl}`);
+
+          const result = await uploadService.downloadAndSaveFile(avatarUrl, 'user_avatars');
+          defaults.avatar = result.url;
+
+          logger.info(`Avatar downloaded successfully for new user: ${result.url}`);
+        } catch (error) {
+          logger.error(`Failed to download avatar for new user: ${error.message}`);
+          // 下载失败时使用原始URL
+          defaults.avatar = avatarUrl;
+        }
+      } else {
+        defaults.avatar = avatarUrl;
+      }
     }
 
     let [user, created] = await User.findOrCreate({
