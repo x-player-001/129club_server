@@ -292,15 +292,10 @@ exports.registerMatch = async (matchId, userId, data = {}) => {
     throw new Error('报名已截止');
   }
 
-  // 获取用户当前队伍
+  // 获取用户信息
   const user = await User.findByPk(userId);
-  if (!user.currentTeamId) {
-    throw new Error('您还未加入任何队伍');
-  }
-
-  // 验证用户是否属于参赛队伍
-  if (user.currentTeamId !== match.team1Id && user.currentTeamId !== match.team2Id) {
-    throw new Error('您不属于参赛队伍');
+  if (!user) {
+    throw new Error('用户不存在');
   }
 
   // 检查是否已报名
@@ -317,30 +312,47 @@ exports.registerMatch = async (matchId, userId, data = {}) => {
     throw new Error('您已报名此比赛');
   }
 
-  // 注释掉报名人数限制，允许超过比赛类型人数报名
-  // 真实场景：maxPlayersPerTeam 代表比赛类型（5人制/8人制/11人制），不限制报名人数
-  // const teamRegCount = await Registration.count({
-  //   where: {
-  //     matchId,
-  //     teamId: user.currentTeamId,
-  //     status: { [Op.in]: ['registered', 'confirmed'] }
-  //   }
-  // });
+  // 确定报名的队伍ID
+  let registrationTeamId;
+  let isTemporary = false;
 
-  // if (teamRegCount >= match.maxPlayersPerTeam) {
-  //   throw new Error(`本队报名人数已满（${match.maxPlayersPerTeam}人）`);
-  // }
+  if (user.currentTeamId) {
+    // 情况1：用户有队伍
+    // 验证是否属于参赛队伍
+    if (user.currentTeamId === match.team1Id || user.currentTeamId === match.team2Id) {
+      // 正式队员，为本队报名
+      registrationTeamId = user.currentTeamId;
+      isTemporary = false;
+    } else {
+      // 不属于参赛队伍，不允许报名
+      throw new Error('您不属于参赛队伍');
+    }
+  } else {
+    // 情况2：用户无队伍（临时队员）
+    // 必须指定支援哪个队
+    if (!data.teamId) {
+      throw new Error('请选择支援的队伍');
+    }
+
+    // 验证选择的队伍是否是参赛队伍
+    if (data.teamId !== match.team1Id && data.teamId !== match.team2Id) {
+      throw new Error('选择的队伍不参与此比赛');
+    }
+
+    registrationTeamId = data.teamId;
+    isTemporary = true;
+  }
 
   // 创建报名记录
   const registration = await Registration.create({
     matchId,
     userId,
-    teamId: user.currentTeamId,
+    teamId: registrationTeamId,
     status: 'registered',
     notes: data.notes || null
   });
 
-  logger.info(`User registered for match: ${userId} -> ${matchId}`);
+  logger.info(`User registered for match: ${userId} -> ${matchId}, team: ${registrationTeamId}, temporary: ${isTemporary}`);
 
   return registration;
 };
