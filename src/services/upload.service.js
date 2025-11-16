@@ -245,8 +245,14 @@ exports.deletePhoto = async (url) => {
  */
 exports.downloadAndSaveFile = async (fileUrl, category = 'user_avatars') => {
   try {
+    // 如果是 http://tmp/ 开头的微信本地临时路径，无法下载
+    if (fileUrl && fileUrl.startsWith('http://tmp/')) {
+      logger.warn(`Cannot download WeChat local temp file: ${fileUrl}`);
+      throw new Error('微信本地临时文件无法下载，请使用上传接口');
+    }
+
     // 如果已经是服务器上的文件，直接返回
-    if (fileUrl && !fileUrl.startsWith('http://tmp/') && !fileUrl.startsWith('https://')) {
+    if (fileUrl && !fileUrl.startsWith('https://')) {
       // 已经是相对路径或服务器URL，无需处理
       if (fileUrl.startsWith('/')) {
         return { url: fileUrl };
