@@ -104,10 +104,97 @@ exports.getSeasonDetail = async (seasonId) => {
     order: [['matchDate', 'DESC']]
   });
 
+  // 计算队伍排名统计（包含totalScore=胜场数）
+  const teamStats = {};
+
+  // 只统计已完成的比赛
+  const completedMatches = matches.filter(m => m.status === 'completed');
+
+  completedMatches.forEach(match => {
+    const team1Id = match.team1Id;
+    const team2Id = match.team2Id;
+    const result = match.result;
+
+    // 初始化队伍统计
+    if (!teamStats[team1Id]) {
+      teamStats[team1Id] = {
+        teamId: team1Id,
+        teamName: match.team1.name,
+        teamLogo: match.team1.logo,
+        totalScore: 0,  // 总比分 = 胜场数
+        totalGoals: 0,
+        matchCount: 0,
+        winCount: 0,
+        loseCount: 0
+      };
+    }
+    if (!teamStats[team2Id]) {
+      teamStats[team2Id] = {
+        teamId: team2Id,
+        teamName: match.team2.name,
+        teamLogo: match.team2.logo,
+        totalScore: 0,  // 总比分 = 胜场数
+        totalGoals: 0,
+        matchCount: 0,
+        winCount: 0,
+        loseCount: 0
+      };
+    }
+
+    // 累加进球数和胜负（根据4节制或传统制）
+    if (match.quarterSystem && result) {
+      // 4节制：使用result中的team1TotalGoals和team2TotalGoals
+      teamStats[team1Id].totalGoals += result.team1TotalGoals || 0;
+      teamStats[team2Id].totalGoals += result.team2TotalGoals || 0;
+
+      // 判断胜负（总比分 = 胜场数）
+      if (result.winnerTeamId === team1Id) {
+        teamStats[team1Id].winCount++;
+        teamStats[team1Id].totalScore++;  // 胜场数+1
+        teamStats[team2Id].loseCount++;
+      } else if (result.winnerTeamId === team2Id) {
+        teamStats[team2Id].winCount++;
+        teamStats[team2Id].totalScore++;  // 胜场数+1
+        teamStats[team1Id].loseCount++;
+      }
+      // 如果winnerTeamId为null，则是平局，不增加totalScore
+    } else {
+      // 传统制：使用match中的finalTeam1Score和finalTeam2Score（进球数）
+      teamStats[team1Id].totalGoals += match.finalTeam1Score || 0;
+      teamStats[team2Id].totalGoals += match.finalTeam2Score || 0;
+
+      // 传统制：赢则totalScore+1（胜场数）
+      if (match.finalTeam1Score > match.finalTeam2Score) {
+        teamStats[team1Id].winCount++;
+        teamStats[team1Id].totalScore++;  // 胜场数+1
+        teamStats[team2Id].loseCount++;
+      } else if (match.finalTeam1Score < match.finalTeam2Score) {
+        teamStats[team2Id].winCount++;
+        teamStats[team2Id].totalScore++;  // 胜场数+1
+        teamStats[team1Id].loseCount++;
+      }
+      // 平局不增加totalScore
+    }
+
+    teamStats[team1Id].matchCount++;
+    teamStats[team2Id].matchCount++;
+  });
+
+  // 转换为数组并排序（按总分降序）
+  const rankings = Object.values(teamStats).sort((a, b) => {
+    if (b.totalScore !== a.totalScore) {
+      return b.totalScore - a.totalScore;
+    }
+    // 积分相同，按进球数排序
+    return b.totalGoals - a.totalGoals;
+  });
+
   return {
     ...season.toJSON(),
     matches,
-    matchCount: matches.length
+    matchCount: matches.length,
+    completedMatches: completedMatches.length,
+    rankings  // 添加队伍排名统计（包含totalScore=胜场数）
   };
 };
 
