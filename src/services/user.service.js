@@ -125,10 +125,40 @@ exports.login = async (code, userInfo = {}) => {
 
     // 如果用户已存在，更新基本信息
     if (!created && userInfo.nickname) {
-      await user.update({
-        nickname: userInfo.nickname,
-        avatar: userInfo.avatar || user.avatar
-      });
+      const updateData = {
+        nickname: userInfo.nickname
+      };
+
+      // 处理头像更新
+      if (userInfo.avatar) {
+        const avatarUrl = userInfo.avatar;
+
+        // 检测是否为微信临时文件或微信头像URL，自动下载保存
+        if (avatarUrl.startsWith('http://tmp/') ||
+            avatarUrl.startsWith('https://thirdwx.qlogo.cn') ||
+            avatarUrl.startsWith('https://wx.qlogo.cn')) {
+
+          try {
+            const uploadService = require('./upload.service');
+            logger.info(`Downloading avatar during login for user ${user.id}: ${avatarUrl}`);
+
+            const result = await uploadService.downloadAndSaveFile(avatarUrl, 'user_avatars');
+            updateData.avatar = result.url;
+
+            logger.info(`Avatar downloaded successfully during login: ${result.url}`);
+          } catch (error) {
+            logger.error(`Failed to download avatar during login: ${error.message}`);
+            // 下载失败时使用原始URL
+            updateData.avatar = avatarUrl;
+          }
+        } else {
+          updateData.avatar = avatarUrl;
+        }
+      } else {
+        updateData.avatar = user.avatar;
+      }
+
+      await user.update(updateData);
     }
 
     // 生成JWT token
@@ -226,6 +256,31 @@ exports.updateUserInfo = async (userId, data) => {
       updateData[field] = data[field];
     }
   });
+
+  // 特殊处理：如果更新头像且是微信临时文件，自动下载并保存
+  if (updateData.avatar) {
+    const avatarUrl = updateData.avatar;
+
+    // 检测是否为微信临时文件路径或需要下载的URL
+    if (avatarUrl.startsWith('http://tmp/') ||
+        avatarUrl.startsWith('https://thirdwx.qlogo.cn') ||
+        avatarUrl.startsWith('https://wx.qlogo.cn')) {
+
+      try {
+        const uploadService = require('./upload.service');
+        logger.info(`Downloading avatar for user ${userId}: ${avatarUrl}`);
+
+        const result = await uploadService.downloadAndSaveFile(avatarUrl, 'user_avatars');
+        updateData.avatar = result.url;
+
+        logger.info(`Avatar downloaded successfully: ${result.url}`);
+      } catch (error) {
+        logger.error(`Failed to download avatar: ${error.message}`);
+        // 下载失败时，仍然保存原始URL（降级处理）
+        logger.warn(`Using original avatar URL as fallback: ${avatarUrl}`);
+      }
+    }
+  }
 
   await user.update(updateData);
 

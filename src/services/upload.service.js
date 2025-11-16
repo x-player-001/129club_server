@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { promisify } = require('util');
+const axios = require('axios');
 const config = require('../config');
 const logger = require('../utils/logger');
 const { Match, MatchResult } = require('../models');
@@ -9,6 +10,7 @@ const { Op } = require('sequelize');
 const mkdir = promisify(fs.mkdir);
 const rename = promisify(fs.rename);
 const unlink = promisify(fs.unlink);
+const writeFile = promisify(fs.writeFile);
 
 /**
  * 上传照片
@@ -232,6 +234,105 @@ exports.deletePhoto = async (url) => {
   } catch (error) {
     logger.error(`Delete file failed: ${url}, error: ${error.message}`);
     return false;
+  }
+};
+
+/**
+ * 从URL下载文件并保存到服务器（用于处理微信临时文件）
+ * @param {string} fileUrl 文件URL（可以是http://tmp/xxx 或完整URL）
+ * @param {string} category 文件分类（如 'user_avatars'）
+ * @returns {Object} 文件信息
+ */
+exports.downloadAndSaveFile = async (fileUrl, category = 'user_avatars') => {
+  try {
+    // 如果已经是服务器上的文件，直接返回
+    if (fileUrl && !fileUrl.startsWith('http://tmp/') && !fileUrl.startsWith('https://')) {
+      // 已经是相对路径或服务器URL，无需处理
+      if (fileUrl.startsWith('/')) {
+        return { url: fileUrl };
+      }
+      // 如果是完整的服务器URL，提取路径部分
+      try {
+        const urlObj = new URL(fileUrl);
+        return { url: urlObj.pathname };
+      } catch {
+        return { url: fileUrl };
+      }
+    }
+
+    logger.info(`Downloading file from URL: ${fileUrl}`);
+
+    // 下载文件
+    const response = await axios.get(fileUrl, {
+      responseType: 'arraybuffer',
+      timeout: 30000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15'
+      }
+    });
+
+    // 获取文件内容
+    const fileBuffer = Buffer.from(response.data);
+
+    // 从响应头获取文件类型
+    const contentType = response.headers['content-type'] || 'image/jpeg';
+
+    // 验证文件类型
+    const allowedTypes = config.upload.allowedTypes;
+    if (!allowedTypes.includes(contentType)) {
+      throw new Error(`不支持的文件类型: ${contentType}`);
+    }
+
+    // 验证文件大小
+    if (fileBuffer.length > config.upload.maxFileSize) {
+      throw new Error(`文件大小超过限制: ${(config.upload.maxFileSize / 1024 / 1024).toFixed(2)}MB`);
+    }
+
+    // 生成目标路径：uploads/category/YYYY/MM/
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+
+    const relativeDir = path.join(category, String(year), month);
+    const absoluteDir = path.join(__dirname, '../../uploads', relativeDir);
+
+    // 确保目录存在
+    await mkdir(absoluteDir, { recursive: true });
+
+    // 生成唯一文件名：时间戳_随机数.ext
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substring(2, 8);
+
+    // 根据content-type确定扩展名
+    let ext = '.jpg';
+    if (contentType.includes('png')) ext = '.png';
+    else if (contentType.includes('gif')) ext = '.gif';
+    else if (contentType.includes('webp')) ext = '.webp';
+
+    const filename = `${timestamp}_${randomStr}${ext}`;
+
+    // 目标文件路径
+    const targetPath = path.join(absoluteDir, filename);
+
+    // 保存文件
+    await writeFile(targetPath, fileBuffer);
+
+    // 生成访问 URL
+    const url = `/${relativeDir.replace(/\\/g, '/')}/${filename}`;
+
+    logger.info(`File downloaded and saved: ${url}, size: ${(fileBuffer.length / 1024).toFixed(2)}KB`);
+
+    return {
+      filename,
+      mimetype: contentType,
+      size: fileBuffer.length,
+      url,
+      uploadedAt: now
+    };
+
+  } catch (error) {
+    logger.error(`Download file failed: ${fileUrl}, error: ${error.message}`);
+    throw new Error(`下载文件失败: ${error.message}`);
   }
 };
 
