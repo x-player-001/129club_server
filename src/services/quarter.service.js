@@ -643,6 +643,18 @@ exports.supplementQuarterResult = async (matchId, data, userId) => {
   // 查找或创建 match_results 记录
   let result = await MatchResult.findOne({ where: { matchId } });
 
+  // 保存旧结果用于回滚统计（如果是更新操作）
+  let oldResult = null;
+  if (result) {
+    oldResult = {
+      winnerTeamId: result.winnerTeamId,
+      team1TotalGoals: result.team1TotalGoals,
+      team2TotalGoals: result.team2TotalGoals,
+      team1FinalScore: result.team1FinalScore,
+      team2FinalScore: result.team2FinalScore
+    };
+  }
+
   if (result) {
     // 更新现有记录（不更新photos，photos由上传接口管理）
     await result.update({
@@ -690,8 +702,8 @@ exports.supplementQuarterResult = async (matchId, data, userId) => {
 
   logger.info(`Quarter match result supplemented: ${matchId}, status: completed, mvps: ${mvpUserIds ? mvpUserIds.length : 0}`);
 
-  // 更新队伍统计数据
-  await updateTeamStats(match, result);
+  // 更新队伍统计数据（如果是修改操作，需要传入旧结果以回滚）
+  await updateTeamStats(match, result, oldResult);
 
   // 更新球员统计数据
   await updatePlayerStats(matchId);
@@ -732,8 +744,11 @@ exports.supplementQuarterResult = async (matchId, data, userId) => {
 
 /**
  * 更新队伍统计数据
+ * @param {Object} match - 比赛对象
+ * @param {Object} result - 新的比赛结果
+ * @param {Object} oldResult - 旧的比赛结果（如果是修改操作）
  */
-async function updateTeamStats(match, result) {
+async function updateTeamStats(match, result, oldResult = null) {
   const { TeamStat, Season, MatchQuarter } = require('../models');
 
   // 获取赛季信息
@@ -755,17 +770,50 @@ async function updateTeamStats(match, result) {
     team2Goals += quarter.team2Goals || 0;
   });
 
-  // 更新队伍1统计
-  await updateSingleTeamStats(match.team1Id, seasonName, match.team1Id === result.winnerTeamId, result.winnerTeamId === null, team1Goals, team2Goals);
+  // 如果是修改操作，先回滚旧的统计数据
+  if (oldResult) {
+    logger.info(`Rolling back old stats for match ${match.id}`);
+    // 回滚队伍1旧统计（减去旧数据）
+    await updateSingleTeamStats(
+      match.team1Id,
+      seasonName,
+      match.team1Id === oldResult.winnerTeamId,
+      oldResult.winnerTeamId === null,
+      oldResult.team1TotalGoals || 0,
+      oldResult.team2TotalGoals || 0,
+      true // 表示是回滚操作
+    );
 
-  // 更新队伍2统计
-  await updateSingleTeamStats(match.team2Id, seasonName, match.team2Id === result.winnerTeamId, result.winnerTeamId === null, team2Goals, team1Goals);
+    // 回滚队伍2旧统计（减去旧数据）
+    await updateSingleTeamStats(
+      match.team2Id,
+      seasonName,
+      match.team2Id === oldResult.winnerTeamId,
+      oldResult.winnerTeamId === null,
+      oldResult.team2TotalGoals || 0,
+      oldResult.team1TotalGoals || 0,
+      true // 表示是回滚操作
+    );
+  }
+
+  // 更新队伍1统计（添加新数据）
+  await updateSingleTeamStats(match.team1Id, seasonName, match.team1Id === result.winnerTeamId, result.winnerTeamId === null, team1Goals, team2Goals, false);
+
+  // 更新队伍2统计（添加新数据）
+  await updateSingleTeamStats(match.team2Id, seasonName, match.team2Id === result.winnerTeamId, result.winnerTeamId === null, team2Goals, team1Goals, false);
 }
 
 /**
  * 更新单个队伍的统计数据
+ * @param {string} teamId - 队伍ID
+ * @param {string} season - 赛季名称
+ * @param {boolean} isWin - 是否获胜
+ * @param {boolean} isDraw - 是否平局
+ * @param {number} goalsFor - 进球数
+ * @param {number} goalsAgainst - 失球数
+ * @param {boolean} isRollback - 是否是回滚操作（减去统计）
  */
-async function updateSingleTeamStats(teamId, season, isWin, isDraw, goalsFor, goalsAgainst) {
+async function updateSingleTeamStats(teamId, season, isWin, isDraw, goalsFor, goalsAgainst, isRollback = false) {
   const { TeamStat } = require('../models');
 
   const [teamStat, created] = await TeamStat.findOrCreate({
@@ -783,27 +831,37 @@ async function updateSingleTeamStats(teamId, season, isWin, isDraw, goalsFor, go
     }
   });
 
+  // 如果是回滚操作，减去统计；否则增加统计
+  const delta = isRollback ? -1 : 1;
+
   // 更新统计
-  teamStat.matchesPlayed += 1;
+  teamStat.matchesPlayed += delta;
 
   if (isWin) {
-    teamStat.wins += 1;
-    teamStat.points += 3;
+    teamStat.wins += delta;
+    teamStat.points += delta * 3;
   } else if (isDraw) {
-    teamStat.draws += 1;
-    teamStat.points += 1;
+    teamStat.draws += delta;
+    teamStat.points += delta * 1;
   } else {
-    teamStat.losses += 1;
+    teamStat.losses += delta;
   }
 
-  teamStat.goalsFor += goalsFor;
-  teamStat.goalsAgainst += goalsAgainst;
+  teamStat.goalsFor += delta * goalsFor;
+  teamStat.goalsAgainst += delta * goalsAgainst;
   teamStat.goalDifference = teamStat.goalsFor - teamStat.goalsAgainst;
-  teamStat.winRate = ((teamStat.wins / teamStat.matchesPlayed) * 100).toFixed(2);
+
+  // 避免除以0
+  if (teamStat.matchesPlayed > 0) {
+    teamStat.winRate = ((teamStat.wins / teamStat.matchesPlayed) * 100).toFixed(2);
+  } else {
+    teamStat.winRate = '0.00';
+  }
 
   await teamStat.save();
 
-  logger.info(`Team stats updated for team ${teamId}: ${teamStat.wins}W ${teamStat.draws}D ${teamStat.losses}L`);
+  const operation = isRollback ? 'rolled back' : 'updated';
+  logger.info(`Team stats ${operation} for team ${teamId}: ${teamStat.wins}W ${teamStat.draws}D ${teamStat.losses}L (${teamStat.matchesPlayed} matches)`);
 }
 
 /**
