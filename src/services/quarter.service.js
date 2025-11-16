@@ -1,4 +1,5 @@
 const { Match, MatchQuarter, MatchEvent, MatchParticipant, MatchResult, User, Team } = require('../models');
+const { Op } = require('sequelize');
 const logger = require('../utils/logger');
 const sequelize = require('../config/database');
 
