@@ -65,11 +65,18 @@ exports.checkAndUnlockAchievements = async (userId, matchId) => {
  * Check Hat Trick achievement (3 goals in single match)
  */
 async function checkHatTrick(userId, matchId, seasonId, achievement) {
-  const participant = await MatchParticipant.findOne({
-    where: { userId, matchId }
+  const { MatchEvent } = require('../models');
+
+  // Count goals from match_events table
+  const goalCount = await MatchEvent.count({
+    where: {
+      matchId,
+      userId,
+      eventType: 'goal'
+    }
   });
 
-  if (!participant || participant.goals < 3) {
+  if (goalCount < 3) {
     return null;
   }
 
@@ -80,11 +87,18 @@ async function checkHatTrick(userId, matchId, seasonId, achievement) {
  * Check Assist King achievement (3 assists in single match)
  */
 async function checkAssistKing(userId, matchId, seasonId, achievement) {
-  const participant = await MatchParticipant.findOne({
-    where: { userId, matchId }
+  const { MatchEvent } = require('../models');
+
+  // Count assists from match_events table
+  const assistCount = await MatchEvent.count({
+    where: {
+      matchId,
+      userId,
+      eventType: 'assist'
+    }
   });
 
-  if (!participant || participant.assists < 3) {
+  if (assistCount < 3) {
     return null;
   }
 
@@ -174,7 +188,10 @@ async function checkMvpCollector(userId, seasonId, achievement) {
 async function checkGoalMachine(userId, seasonId, achievement) {
   if (!seasonId) return null;
 
-  const participants = await MatchParticipant.findAll({
+  const { MatchEvent } = require('../models');
+
+  // Count total goals in all season matches from match_events table
+  const totalGoals = await MatchEvent.count({
     include: [{
       model: Match,
       as: 'match',
@@ -184,10 +201,11 @@ async function checkGoalMachine(userId, seasonId, achievement) {
       },
       required: true
     }],
-    where: { userId }
+    where: {
+      userId,
+      eventType: 'goal'
+    }
   });
-
-  const totalGoals = participants.reduce((sum, p) => sum + (p.goals || 0), 0);
 
   if (totalGoals >= 10) {
     return await unlockAchievement(userId, achievement.id, seasonId, null, achievement);
