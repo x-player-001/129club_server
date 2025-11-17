@@ -1,13 +1,13 @@
 const Router = require('koa-router');
 const router = new Router();
 const matchController = require('../controllers/match.controller');
-const { authMiddleware, checkRole } = require('../middlewares/auth');
+const { authMiddleware, optionalAuthMiddleware, checkRole } = require('../middlewares/auth');
 
-// 获取比赛列表
-router.get('/list', authMiddleware, matchController.getMatchList);
+// 获取比赛列表（支持游客浏览）
+router.get('/list', optionalAuthMiddleware, matchController.getMatchList);
 
-// 获取比赛详情
-router.get('/:matchId', authMiddleware, matchController.getMatchDetail);
+// 获取比赛详情（支持游客浏览）
+router.get('/:matchId', optionalAuthMiddleware, matchController.getMatchDetail);
 
 // 创建比赛（管理员）
 router.post('/', authMiddleware, checkRole(['super_admin', 'captain']), matchController.createMatch);

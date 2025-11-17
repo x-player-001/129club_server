@@ -1,19 +1,19 @@
 const Router = require('koa-router');
 const router = new Router();
 const seasonController = require('../controllers/season.controller');
-const { authMiddleware } = require('../middlewares/auth');
+const { authMiddleware, optionalAuthMiddleware } = require('../middlewares/auth');
 
 // 创建赛季
 router.post('/', authMiddleware, seasonController.createSeason);
 
-// 获取赛季列表
-router.get('/list', authMiddleware, seasonController.getSeasonList);
+// 获取赛季列表（支持游客浏览）
+router.get('/list', optionalAuthMiddleware, seasonController.getSeasonList);
 
-// 获取赛季详情
-router.get('/:seasonId/detail', authMiddleware, seasonController.getSeasonDetail);
+// 获取赛季详情（支持游客浏览）
+router.get('/:seasonId/detail', optionalAuthMiddleware, seasonController.getSeasonDetail);
 
-// 获取赛季统计
-router.get('/:seasonId/statistics', authMiddleware, seasonController.getSeasonStatistics);
+// 获取赛季统计（支持游客浏览）
+router.get('/:seasonId/statistics', optionalAuthMiddleware, seasonController.getSeasonStatistics);
 
 // 更新赛季信息
 router.put('/:seasonId', authMiddleware, seasonController.updateSeason);

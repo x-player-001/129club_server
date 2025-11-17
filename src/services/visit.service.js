@@ -10,6 +10,17 @@ const sequelize = require('../config/database');
  */
 exports.recordVisit = async (userId, visitInfo = {}) => {
   try {
+    // 检查用户是否存在
+    const userExists = await User.findByPk(userId);
+    if (!userExists) {
+      logger.warn(`User ${userId} not found, skip visit recording`);
+      return {
+        success: false,
+        message: 'User not found',
+        totalVisits: 0
+      };
+    }
+
     const {
       platform,
       appVersion,

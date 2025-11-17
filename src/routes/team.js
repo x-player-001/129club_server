@@ -1,13 +1,13 @@
 const Router = require('koa-router');
 const router = new Router();
 const teamController = require('../controllers/team.controller');
-const { authMiddleware, checkRole } = require('../middlewares/auth');
+const { authMiddleware, optionalAuthMiddleware, checkRole } = require('../middlewares/auth');
 
-// 获取队伍列表
-router.get('/list', authMiddleware, teamController.getTeamList);
+// 获取队伍列表（支持游客浏览）
+router.get('/list', optionalAuthMiddleware, teamController.getTeamList);
 
-// 获取队伍详情
-router.get('/:teamId', authMiddleware, teamController.getTeamDetail);
+// 获取队伍详情（支持游客浏览）
+router.get('/:teamId', optionalAuthMiddleware, teamController.getTeamDetail);
 
 // 创建队伍（管理员）
 router.post('/', authMiddleware, checkRole(['super_admin']), teamController.createTeam);
