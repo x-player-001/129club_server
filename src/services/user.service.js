@@ -307,12 +307,10 @@ exports.updateUserInfo = async (userId, data) => {
     // 对于 http://tmp/ 路径，直接保存（前端应先上传到服务器）
   }
 
-  // 检查是否完善了必要的个人信息，如果是则自动激活用户
-  const isProfileComplete = user.realName && user.jerseyNumber && user.position && user.position.length > 0;
-
-  if (isProfileComplete && user.status === 'inactive') {
+  // 只要调用更新接口，就自动激活用户
+  if (user.status === 'inactive') {
     updateData.status = 'active';
-    logger.info(`User ${userId} profile completed, auto-activating`);
+    logger.info(`User ${userId} auto-activating on profile update`);
   }
 
   await user.update(updateData);
