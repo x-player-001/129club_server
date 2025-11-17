@@ -628,11 +628,11 @@ exports.supplementQuarterResult = async (matchId, data, userId) => {
     winnerTeamId = match.team2Id;
   } else {
     // 平局，检查是否有点球大战
-    if (penaltyShootout && penaltyShootout.team1Score !== undefined && penaltyShootout.team2Score !== undefined) {
-      if (penaltyShootout.team1Score > penaltyShootout.team2Score) {
+    if (penaltyShootout && penaltyShootout.team1PenaltyScore !== undefined && penaltyShootout.team2PenaltyScore !== undefined) {
+      if (penaltyShootout.team1PenaltyScore > penaltyShootout.team2PenaltyScore) {
         penaltyWinnerTeamId = match.team1Id;
         winnerTeamId = match.team1Id;  // 最终获胜者为点球获胜方
-      } else if (penaltyShootout.team2Score > penaltyShootout.team1Score) {
+      } else if (penaltyShootout.team2PenaltyScore > penaltyShootout.team1PenaltyScore) {
         penaltyWinnerTeamId = match.team2Id;
         winnerTeamId = match.team2Id;  // 最终获胜者为点球获胜方
       }
@@ -666,8 +666,8 @@ exports.supplementQuarterResult = async (matchId, data, userId) => {
       team2TotalGoals,
       winnerTeamId,
       penaltyShootout: penaltyShootout ? true : false,
-      team1PenaltyScore: penaltyShootout ? penaltyShootout.team1Score : null,
-      team2PenaltyScore: penaltyShootout ? penaltyShootout.team2Score : null,
+      team1PenaltyScore: penaltyShootout ? penaltyShootout.team1PenaltyScore : null,
+      team2PenaltyScore: penaltyShootout ? penaltyShootout.team2PenaltyScore : null,
       penaltyWinnerTeamId: penaltyWinnerTeamId,
       submittedBy: userId,
       submittedAt: new Date()
@@ -685,8 +685,8 @@ exports.supplementQuarterResult = async (matchId, data, userId) => {
       team2TotalGoals,
       winnerTeamId,
       penaltyShootout: penaltyShootout ? true : false,
-      team1PenaltyScore: penaltyShootout ? penaltyShootout.team1Score : null,
-      team2PenaltyScore: penaltyShootout ? penaltyShootout.team2Score : null,
+      team1PenaltyScore: penaltyShootout ? penaltyShootout.team1PenaltyScore : null,
+      team2PenaltyScore: penaltyShootout ? penaltyShootout.team2PenaltyScore : null,
       penaltyWinnerTeamId: penaltyWinnerTeamId,
       mvpUserIds: mvpUserIds || null,
       summary: summary || null,
