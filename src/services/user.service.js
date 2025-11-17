@@ -327,7 +327,7 @@ exports.updateUserInfo = async (userId, data) => {
 exports.getMemberList = async (params = {}) => {
   const {
     page = 1,
-    pageSize = 20,
+    pageSize = 100,
     status,
     teamId,
     role,
