@@ -107,7 +107,7 @@ exports.login = async (code, userInfo = {}) => {
     const defaults = {
       openid,
       unionid,
-      status: 'active'
+      status: 'inactive'  // 默认为未激活，需要完善个人信息后才激活
     };
 
     // 只有前端传了才设置，否则保持为空
@@ -307,6 +307,14 @@ exports.updateUserInfo = async (userId, data) => {
     // 对于 http://tmp/ 路径，直接保存（前端应先上传到服务器）
   }
 
+  // 检查是否完善了必要的个人信息，如果是则自动激活用户
+  const isProfileComplete = user.realName && user.jerseyNumber && user.position && user.position.length > 0;
+
+  if (isProfileComplete && user.status === 'inactive') {
+    updateData.status = 'active';
+    logger.info(`User ${userId} profile completed, auto-activating`);
+  }
+
   await user.update(updateData);
 
   logger.info(`User info updated: ${userId}`, updateData);
@@ -335,8 +343,11 @@ exports.getMemberList = async (params = {}) => {
   // 构建查询条件
   const where = {};
 
+  // 默认只返回活跃用户，除非明确指定 status
   if (status) {
     where.status = status;
+  } else {
+    where.status = 'active';  // 默认只显示活跃用户
   }
 
   if (role) {
