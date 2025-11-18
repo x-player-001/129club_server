@@ -4,11 +4,12 @@ const logger = require('../utils/logger');
 
 exports.getOverview = async (userId, filterType = 'season') => {
   try {
-    const dateFilter = await getDateFilter(filterType);
+    const { seasonFilter, dateFilter } = await getDateFilter(filterType);
 
     const matches = await Match.findAll({
       where: {
         status: 'completed',
+        ...seasonFilter,
         ...dateFilter
       },
       include: [
@@ -43,7 +44,7 @@ exports.getOverview = async (userId, filterType = 'season') => {
     });
 
     const summary = calculateSummary(matches);
-    const myStats = await calculateMyStats(matches, userId, dateFilter);
+    const myStats = await calculateMyStats(matches, userId, seasonFilter, dateFilter);
     const myRanking = await calculateMyRanking(matches, userId);
     const teamStats = await calculateTeamStats(matches, userId);
     const recentMatches = await formatRecentMatches(matches.slice(0, 5), userId);
@@ -69,8 +70,11 @@ async function getDateFilter(filterType) {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
       return {
-        matchDate: {
-          [Op.between]: [startOfMonth, endOfMonth]
+        seasonFilter: {},
+        dateFilter: {
+          matchDate: {
+            [Op.between]: [startOfMonth, endOfMonth]
+          }
         }
       };
     }
@@ -81,27 +85,33 @@ async function getDateFilter(filterType) {
         order: [['createdAt', 'DESC']]
       });
 
-      if (currentSeason && currentSeason.startDate) {
-        const endDate = currentSeason.endDate || now;
+      // 查询该赛季的所有比赛，不限制时间范围
+      if (currentSeason) {
         return {
-          matchDate: {
-            [Op.between]: [currentSeason.startDate, endDate]
-          }
+          seasonFilter: { seasonId: currentSeason.id },
+          dateFilter: {}
         };
       }
 
+      // 如果没有active赛季，查询最近30天
       const thirtyDaysAgo = new Date(now);
       thirtyDaysAgo.setDate(now.getDate() - 30);
       return {
-        matchDate: {
-          [Op.gte]: thirtyDaysAgo
+        seasonFilter: {},
+        dateFilter: {
+          matchDate: {
+            [Op.gte]: thirtyDaysAgo
+          }
         }
       };
     }
 
     case 'all':
     default:
-      return {};
+      return {
+        seasonFilter: {},
+        dateFilter: {}
+      };
   }
 }
 
@@ -129,7 +139,7 @@ function calculateSummary(matches) {
   };
 }
 
-async function calculateMyStats(matches, userId, dateFilter) {
+async function calculateMyStats(matches, userId, seasonFilter, dateFilter) {
   const myParticipations = await MatchParticipant.findAll({
     where: { userId },
     include: [
@@ -138,6 +148,7 @@ async function calculateMyStats(matches, userId, dateFilter) {
         as: 'match',
         where: {
           status: 'completed',
+          ...seasonFilter,
           ...dateFilter
         },
         required: true,
