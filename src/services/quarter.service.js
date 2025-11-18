@@ -868,7 +868,7 @@ async function updateSingleTeamStats(teamId, season, isWin, isDraw, goalsFor, go
  * 重新计算单个球员的统计数据（幂等操作）
  */
 async function recalculatePlayerStats(userId) {
-  const { PlayerStat, MatchEvent, MatchParticipant, User, Match } = require('../models');
+  const { PlayerStat, MatchEvent, MatchParticipant, MatchResult, User, Match } = require('../models');
 
   // 获取该球员所有参与的比赛
   const allParticipations = await MatchParticipant.findAll({
@@ -899,6 +899,15 @@ async function recalculatePlayerStats(userId) {
   });
   totalAssists = assistEvents.length;
 
+  // 统计MVP次数：查询match_result表中mvpUserIds包含该userId的比赛数
+  const mvpCount = await MatchResult.count({
+    where: {
+      mvpUserIds: {
+        [Op.like]: `%"${userId}"%`
+      }
+    }
+  });
+
   // 找到或创建球员统计记录
   const [playerStat, created] = await PlayerStat.findOrCreate({
     where: { userId },
@@ -910,7 +919,8 @@ async function recalculatePlayerStats(userId) {
       draws: 0,
       losses: 0,
       winRate: '0.00',
-      attendanceRate: '0.00'
+      attendanceRate: '0.00',
+      mvpCount: 0
     }
   });
 
@@ -918,6 +928,7 @@ async function recalculatePlayerStats(userId) {
   playerStat.matchesPlayed = allParticipations.length;
   playerStat.goals = totalGoals;
   playerStat.assists = totalAssists;
+  playerStat.mvpCount = mvpCount;
 
   // 计算出勤率（按队伍计算）
   const user = await User.findByPk(userId, {
@@ -944,23 +955,64 @@ async function recalculatePlayerStats(userId) {
 
   await playerStat.save();
 
-  logger.info(`Player stats recalculated for user ${userId}: ${playerStat.matchesPlayed} matches, ${totalGoals} goals, ${totalAssists} assists, attendance: ${playerStat.attendanceRate}%`);
+  logger.info(`Player stats recalculated for user ${userId}: ${playerStat.matchesPlayed} matches, ${totalGoals} goals, ${totalAssists} assists, ${mvpCount} MVPs, attendance: ${playerStat.attendanceRate}%`);
 }
 
 /**
- * 更新球员统计数据（为所有参赛球员重新计算）
+ * 更新球员统计数据（为所有参赛球员重新计算，并更新整个队伍所有球员的出勤率）
  */
 async function updatePlayerStats(matchId) {
-  const { MatchParticipant } = require('../models');
+  const { MatchParticipant, User, PlayerStat } = require('../models');
+
+  // 获取比赛信息
+  const match = await Match.findByPk(matchId);
+  if (!match) return;
 
   // 获取到场人员
   const participants = await MatchParticipant.findAll({
     where: { matchId }
   });
 
-  // 为每个参赛球员重新计算统计数据
+  // 为每个参赛球员重新计算统计数据（包括进球、助攻、MVP、出勤率）
   for (const participant of participants) {
     await recalculatePlayerStats(participant.userId);
+  }
+
+  // 更新两支队伍所有球员的出勤率（包括未参赛球员）
+  const teamIds = [match.team1Id, match.team2Id];
+
+  for (const teamId of teamIds) {
+    // 获取该队伍所有球员（有PlayerStat记录的）
+    const teamPlayers = await PlayerStat.findAll({
+      include: [{
+        model: User,
+        as: 'user',
+        where: { currentTeamId: teamId },
+        attributes: ['id', 'currentTeamId']
+      }]
+    });
+
+    // 统计该队伍参加的已完成比赛总数
+    const teamMatchCount = await Match.count({
+      where: {
+        status: 'completed',
+        [Op.or]: [
+          { team1Id: teamId },
+          { team2Id: teamId }
+        ]
+      }
+    });
+
+    if (teamMatchCount > 0) {
+      // 更新每个队员的出勤率
+      for (const playerStat of teamPlayers) {
+        const oldRate = playerStat.attendanceRate;
+        playerStat.attendanceRate = ((playerStat.matchesPlayed / teamMatchCount) * 100).toFixed(2);
+        await playerStat.save();
+
+        logger.info(`Updated attendance for ${playerStat.user.id}: ${oldRate}% → ${playerStat.attendanceRate}% (${playerStat.matchesPlayed}/${teamMatchCount})`);
+      }
+    }
   }
 }
 
