@@ -7,7 +7,7 @@
  * @param {string} userId 提交者ID
  */
 exports.supplementQuarterResult = async (matchId, data, userId) => {
-  const { mvpUserId, photos, summary } = data;
+  const { mvpUserId, mvpUserIds, photos, summary } = data;
 
   // 验证比赛
   const match = await Match.findByPk(matchId);
@@ -42,13 +42,23 @@ exports.supplementQuarterResult = async (matchId, data, userId) => {
   const winnerTeamId = team1FinalScore > team2FinalScore ? match.team1Id :
                       (team2FinalScore > team1FinalScore ? match.team2Id : null);
 
+  // 处理MVP数据：支持单个mvpUserId或多个mvpUserIds
+  let finalMvpUserIds = null;
+  if (mvpUserIds) {
+    // 如果传入的是数组，直接使用
+    finalMvpUserIds = Array.isArray(mvpUserIds) ? mvpUserIds : [mvpUserIds];
+  } else if (mvpUserId) {
+    // 兼容旧的单个MVP字段
+    finalMvpUserIds = [mvpUserId];
+  }
+
   // 查找或创建 match_results 记录
   let result = await MatchResult.findOne({ where: { matchId } });
 
   if (result) {
     // 更新现有记录
     await result.update({
-      mvpUserId: mvpUserId || result.mvpUserId,
+      mvpUserIds: finalMvpUserIds || result.mvpUserIds,
       photos: photos || result.photos,
       summary: summary || result.summary,
       team1FinalScore,
@@ -71,7 +81,7 @@ exports.supplementQuarterResult = async (matchId, data, userId) => {
       team1TotalGoals,
       team2TotalGoals,
       winnerTeamId,
-      mvpUserId: mvpUserId || null,
+      mvpUserIds: finalMvpUserIds,
       photos: photos || null,
       summary: summary || null,
       submittedBy: userId,
@@ -84,7 +94,7 @@ exports.supplementQuarterResult = async (matchId, data, userId) => {
     await match.update({ status: 'completed' });
   }
 
-  logger.info(`Quarter match result supplemented: ${matchId}, status: completed, mvp: ${mvpUserId || 'none'}`);
+  logger.info(`Quarter match result supplemented: ${matchId}, status: completed, mvp: ${finalMvpUserIds ? finalMvpUserIds.join(',') : 'none'}`);
 
   return {
     result,
