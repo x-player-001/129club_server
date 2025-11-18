@@ -1,5 +1,6 @@
 const { Match, MatchResult, MatchParticipant, Season, Team, User, PlayerStat } = require('../models');
-const { Op } = require('sequelize');
+const { Op, literal } = require('sequelize');
+const sequelize = require('../config/database');
 const logger = require('../utils/logger');
 
 exports.getOverview = async (userId, filterType = 'season') => {
@@ -208,40 +209,64 @@ async function calculateMyStats(matches, userId, seasonFilter, dateFilter) {
 }
 
 async function calculateMyRanking(matches, userId) {
-  const userStats = {};
+  // 从 PlayerStat 表获取排名数据（与 getRanking 接口保持一致）
 
-  for (const match of matches) {
-    if (match.participants) {
-      for (const participant of match.participants) {
-        const uid = participant.userId;
-        if (!userStats[uid]) {
-          userStats[uid] = { goals: 0, assists: 0, matches: 0 };
-        }
-        userStats[uid].goals += participant.goals || 0;
-        userStats[uid].assists += participant.assists || 0;
-        userStats[uid].matches += 1;
-      }
-    }
+  // 先获取当前用户的统计数据
+  const myStats = await PlayerStat.findOne({
+    where: { userId }
+  });
+
+  if (!myStats) {
+    return {
+      goalsRank: null,
+      assistsRank: null,
+      attendanceRank: null
+    };
   }
 
-  const usersArray = Object.entries(userStats).map(([uid, stats]) => ({
-    userId: uid,
-    ...stats
-  }));
+  // 射手榜排名：比我进球多的人数 + 1
+  const goalsRank = await PlayerStat.count({
+    where: {
+      [Op.or]: [
+        { goals: { [Op.gt]: myStats.goals } },
+        {
+          goals: myStats.goals,
+          matchesPlayed: { [Op.gt]: myStats.matchesPlayed }
+        }
+      ]
+    }
+  });
 
-  const goalRanking = [...usersArray].sort((a, b) => b.goals - a.goals);
-  const goalsRank = goalRanking.findIndex(u => u.userId === userId) + 1;
+  // 助攻榜排名：比我助攻多的人数 + 1
+  const assistsRank = await PlayerStat.count({
+    where: {
+      [Op.or]: [
+        { assists: { [Op.gt]: myStats.assists } },
+        {
+          assists: myStats.assists,
+          matchesPlayed: { [Op.gt]: myStats.matchesPlayed }
+        }
+      ]
+    }
+  });
 
-  const assistRanking = [...usersArray].sort((a, b) => b.assists - a.assists);
-  const assistsRank = assistRanking.findIndex(u => u.userId === userId) + 1;
-
-  const attendanceRanking = [...usersArray].sort((a, b) => b.matches - a.matches);
-  const attendanceRank = attendanceRanking.findIndex(u => u.userId === userId) + 1;
+  // 出勤榜排名：比我出勤多的人数 + 1
+  const attendanceRank = await PlayerStat.count({
+    where: {
+      [Op.or]: [
+        { matchesPlayed: { [Op.gt]: myStats.matchesPlayed } },
+        {
+          matchesPlayed: myStats.matchesPlayed,
+          attendanceRate: { [Op.gt]: myStats.attendanceRate }
+        }
+      ]
+    }
+  });
 
   return {
-    goalsRank: goalsRank > 0 ? goalsRank : null,
-    assistsRank: assistsRank > 0 ? assistsRank : null,
-    attendanceRank: attendanceRank > 0 ? attendanceRank : null
+    goalsRank: goalsRank + 1,
+    assistsRank: assistsRank + 1,
+    attendanceRank: attendanceRank + 1
   };
 }
 

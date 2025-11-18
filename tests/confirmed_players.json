@@ -1,0 +1,316 @@
+{
+  "comment": "第一届两江超级联赛 - 已确认球员名单(含userId)",
+  "season": "第一届两江超级联赛",
+  "confirmedPlayers": {
+    "曾鹏": {
+      "userId": "407b88e4-d9cf-4c78-bff5-85e4fa868eca",
+      "realName": "曾鹏",
+      "nickname": "曾鹏",
+      "team": "嘉陵摩托"
+    },
+    "洪胜": {
+      "userId": "277dc273-6b68-4d68-8414-3f2672278a6e",
+      "realName": "李洪胜",
+      "nickname": "公园-加图索",
+      "team": "嘉陵摩托"
+    },
+    "李洪胜": {
+      "userId": "277dc273-6b68-4d68-8414-3f2672278a6e",
+      "realName": "李洪胜",
+      "nickname": "公园-加图索",
+      "team": "嘉陵摩托"
+    },
+    "黄波": {
+      "userId": "9bb0beb2-1810-466e-9e60-713a82f2c6df",
+      "realName": "黄波",
+      "nickname": "黄泥磅斯凯利",
+      "team": "嘉陵摩托"
+    },
+    "马培才": {
+      "userId": "37a97715-d228-479b-a032-e04e24b43ae7",
+      "realName": "马培才",
+      "nickname": "马培才",
+      "team": "嘉陵摩托"
+    },
+    "老马": {
+      "userId": "37a97715-d228-479b-a032-e04e24b43ae7",
+      "realName": "马培才",
+      "nickname": "马培才",
+      "team": "嘉陵摩托"
+    },
+    "毅": {
+      "userId": "21a35430-9b03-4adf-9ac1-be66f1aad476",
+      "realName": "施毅",
+      "nickname": "施毅",
+      "team": "嘉陵摩托"
+    },
+    "施毅": {
+      "userId": "21a35430-9b03-4adf-9ac1-be66f1aad476",
+      "realName": "施毅",
+      "nickname": "施毅",
+      "team": "嘉陵摩托"
+    },
+    "王凌云": {
+      "userId": "6a1ea615-5f87-4e6a-bc3a-214ee9a48646",
+      "realName": "王凌云",
+      "nickname": "幺",
+      "team": "嘉陵摩托"
+    },
+    "101": {
+      "userId": "6a1ea615-5f87-4e6a-bc3a-214ee9a48646",
+      "realName": "王凌云",
+      "nickname": "幺",
+      "team": "嘉陵摩托",
+      "note": "文档中称'101'"
+    },
+    "杨涛": {
+      "userId": "84e2f056-3854-41e6-9941-25f9a428fcda",
+      "realName": "杨涛",
+      "nickname": "杨涛",
+      "team": "嘉陵摩托"
+    },
+    "海川": {
+      "userId": "370f143c-17fe-4df4-b2d6-f75ed4a97a99",
+      "realName": "张海川",
+      "nickname": "川哥",
+      "team": "嘉陵摩托"
+    },
+    "川哥": {
+      "userId": "370f143c-17fe-4df4-b2d6-f75ed4a97a99",
+      "realName": "张海川",
+      "nickname": "川哥",
+      "team": "嘉陵摩托"
+    },
+    "张海川": {
+      "userId": "370f143c-17fe-4df4-b2d6-f75ed4a97a99",
+      "realName": "张海川",
+      "nickname": "川哥",
+      "team": "嘉陵摩托"
+    },
+    "张欣": {
+      "userId": "fc5f3bf4-bcaf-4a07-a529-28c6cf6f622a",
+      "realName": "张欣",
+      "nickname": "张9",
+      "team": "嘉陵摩托"
+    },
+    "廖鹏": {
+      "userId": "71d7ab1d-1674-4f0f-8a81-d0348f45ed83",
+      "realName": "廖鹏",
+      "nickname": "罗纳尔多",
+      "team": "嘉陵摩托"
+    },
+    "杨文华": {
+      "userId": "d00e587b-de8f-44d5-b716-9d7860266be6",
+      "realName": "杨文华",
+      "nickname": "汽博哈兰德",
+      "team": "嘉陵摩托"
+    },
+    "覃文波": {
+      "userId": "cef30ce9-504f-48fe-9bee-b6c66b61db77",
+      "realName": "覃文波",
+      "nickname": "QIN",
+      "team": "嘉陵摩托"
+    },
+    "海瑞": {
+      "userId": "e18ad310-339b-48b4-8745-58630b87ba3d",
+      "realName": "蒲海瑞",
+      "nickname": "蒲海瑞",
+      "team": "嘉陵摩托"
+    },
+    "蒲海瑞": {
+      "userId": "e18ad310-339b-48b4-8745-58630b87ba3d",
+      "realName": "蒲海瑞",
+      "nickname": "蒲海瑞",
+      "team": "嘉陵摩托"
+    },
+    "王鑫": {
+      "userId": "108f7973-6baa-47ae-8138-139723ad1eb5",
+      "realName": "王鑫",
+      "nickname": "laughing鑫",
+      "team": "嘉陵摩托",
+      "note": "有时借到长江队"
+    },
+    "徐翔": {
+      "userId": "d8d70e63-fe1b-4a73-9b1c-93d68d259e99",
+      "realName": "徐翔",
+      "nickname": "二哥",
+      "team": "嘉陵摩托"
+    },
+    "小刘": {
+      "userId": "942b0614-06e4-4e35-acd8-52f806a9a5c7",
+      "realName": "刘立希",
+      "nickname": "小刘",
+      "team": "嘉陵摩托"
+    },
+    "刘立希": {
+      "userId": "942b0614-06e4-4e35-acd8-52f806a9a5c7",
+      "realName": "刘立希",
+      "nickname": "小刘",
+      "team": "嘉陵摩托"
+    },
+    "小黑": {
+      "userId": "8cf4f261-5ddb-446b-9064-dacbe9c59f1f",
+      "realName": "张正祥",
+      "nickname": "二塘坎特",
+      "team": "长江黄河",
+      "note": "长江队核心前锋"
+    },
+    "张正祥": {
+      "userId": "8cf4f261-5ddb-446b-9064-dacbe9c59f1f",
+      "realName": "张正祥",
+      "nickname": "二塘坎特",
+      "team": "长江黄河"
+    },
+    "小房": {
+      "userId": "1ab26cea-e054-4500-a4a9-14b9b82239ad",
+      "realName": "房光宇",
+      "nickname": "小房",
+      "team": "长江黄河"
+    },
+    "房光宇": {
+      "userId": "1ab26cea-e054-4500-a4a9-14b9b82239ad",
+      "realName": "房光宇",
+      "nickname": "小房",
+      "team": "长江黄河"
+    },
+    "罗阳": {
+      "userId": "7dda9b5f-62ca-4e98-a44d-943cb982c684",
+      "realName": "罗阳",
+      "nickname": "Young",
+      "team": "长江黄河"
+    },
+    "曹老板": {
+      "userId": "7fbeef0d-dd93-457b-a259-16e869430e28",
+      "realName": "曹枫",
+      "nickname": "啊啊喔",
+      "team": "长江黄河"
+    },
+    "曹枫": {
+      "userId": "7fbeef0d-dd93-457b-a259-16e869430e28",
+      "realName": "曹枫",
+      "nickname": "啊啊喔",
+      "team": "长江黄河"
+    },
+    "邱帅": {
+      "userId": "41097aab-54bd-4800-84cf-f79e8f7d3d2b",
+      "realName": "邱帅",
+      "nickname": "巴国城小胖子",
+      "team": "长江黄河"
+    },
+    "朱静": {
+      "userId": "7ac814ea-1d64-4878-a68e-cbba2cf028e8",
+      "realName": "朱静",
+      "nickname": "诚友小朱",
+      "team": "长江黄河"
+    },
+    "清亮": {
+      "userId": "09f94250-a533-490b-bea7-295e2b128737",
+      "realName": "王清亮",
+      "nickname": "铜元局皮尔洛",
+      "team": "长江黄河"
+    },
+    "王清亮": {
+      "userId": "09f94250-a533-490b-bea7-295e2b128737",
+      "realName": "王清亮",
+      "nickname": "铜元局皮尔洛",
+      "team": "长江黄河"
+    },
+    "陈然": {
+      "userId": "8cd7500c-c95e-4f3e-b776-c9bfaa5c0235",
+      "realName": "陈然",
+      "nickname": "然大大",
+      "team": "长江黄河"
+    },
+    "云鹏": {
+      "userId": "8cf5f4ad-3159-41e2-942f-b77804afe972",
+      "realName": "李云鹏",
+      "nickname": "李云鹏",
+      "team": "长江黄河"
+    },
+    "李云鹏": {
+      "userId": "8cf5f4ad-3159-41e2-942f-b77804afe972",
+      "realName": "李云鹏",
+      "nickname": "李云鹏",
+      "team": "长江黄河"
+    },
+    "福子": {
+      "userId": "9c0ccbee-c7a4-4da5-9147-7e117f9eb16a",
+      "realName": "孙福临",
+      "nickname": "福子",
+      "team": "长江黄河"
+    },
+    "孙福临": {
+      "userId": "9c0ccbee-c7a4-4da5-9147-7e117f9eb16a",
+      "realName": "孙福临",
+      "nickname": "福子",
+      "team": "长江黄河"
+    },
+    "木头": {
+      "userId": "d2f05391-e6e4-4109-a0ef-47631700cb69",
+      "realName": "牟小军",
+      "nickname": "木头",
+      "team": "嘉陵摩托"
+    },
+    "牟小军": {
+      "userId": "d2f05391-e6e4-4109-a0ef-47631700cb69",
+      "realName": "牟小军",
+      "nickname": "木头",
+      "team": "嘉陵摩托"
+    },
+    "剑桥": {
+      "userId": "003d0cec-2665-4655-82aa-198784fd2886",
+      "realName": "刘剑桥",
+      "nickname": "刘仔裤",
+      "team": "嘉陵摩托"
+    },
+    "刘剑桥": {
+      "userId": "003d0cec-2665-4655-82aa-198784fd2886",
+      "realName": "刘剑桥",
+      "nickname": "刘仔裤",
+      "team": "嘉陵摩托"
+    },
+    "李强": {
+      "userId": "1f8b12ed-deef-46de-8530-1fa1c8fd2f12",
+      "realName": "李强",
+      "nickname": "江津皮尔洛",
+      "team": "长江黄河"
+    },
+    "黄展": {
+      "userId": "fe6aebef-6f31-4cc1-baa0-4131c267d5f8",
+      "realName": "黄展",
+      "nickname": "黄展",
+      "team": "长江黄河"
+    },
+    "戴壮": {
+      "userId": "180d92e2-5a13-450e-97ea-9e19283c860b",
+      "realName": "戴壮",
+      "nickname": "：D",
+      "team": "长江黄河"
+    },
+    "黄儒学": {
+      "userId": "28279967-d68a-45d3-93aa-1887554b2eb3",
+      "realName": "黄儒学",
+      "nickname": "黑子",
+      "team": "长江黄河"
+    },
+    "黑儒学": {
+      "userId": "28279967-d68a-45d3-93aa-1887554b2eb3",
+      "realName": "黄儒学",
+      "nickname": "黑子",
+      "team": "长江黄河",
+      "note": "文档中称'黑儒学'"
+    },
+    "黑子": {
+      "userId": "28279967-d68a-45d3-93aa-1887554b2eb3",
+      "realName": "黄儒学",
+      "nickname": "黑子",
+      "team": "长江黄河"
+    }
+  },
+  "summary": {
+    "totalConfirmed": 45,
+    "uniquePlayers": 32,
+    "嘉陵摩托": 18,
+    "长江黄河": 14
+  }
+}
