@@ -141,6 +141,11 @@ function calculateSummary(matches) {
 }
 
 async function calculateMyStats(matches, userId, seasonFilter, dateFilter) {
+  // 从 PlayerStat 表获取进球、助攻、MVP数据（与 /api/stats/player/{id} 接口保持一致）
+  const myPlayerStat = await PlayerStat.findOne({
+    where: { userId }
+  });
+
   const myParticipations = await MatchParticipant.findAll({
     where: { userId },
     include: [
@@ -163,23 +168,15 @@ async function calculateMyStats(matches, userId, seasonFilter, dateFilter) {
     ]
   });
 
-  let totalGoals = 0;
-  let totalAssists = 0;
-  let totalMvp = 0;
+  // 从 PlayerStat 获取累计数据
+  const totalGoals = myPlayerStat ? myPlayerStat.goals : 0;
+  const totalAssists = myPlayerStat ? myPlayerStat.assists : 0;
+  const totalMvp = myPlayerStat ? myPlayerStat.mvpCount : 0;
+
+  // 计算胜率（仅针对当前筛选的比赛）
   let wins = 0;
-
   myParticipations.forEach(participation => {
-    totalGoals += participation.goals || 0;
-    totalAssists += participation.assists || 0;
-
     const match = participation.match;
-    if (match && match.result && match.result.mvpUserIds) {
-      const mvpUserIds = match.result.mvpUserIds;
-      if (Array.isArray(mvpUserIds) && mvpUserIds.includes(userId)) {
-        totalMvp++;
-      }
-    }
-
     if (match && match.result) {
       const result = match.result;
       const userTeam = participation.team;
