@@ -901,11 +901,10 @@ async function recalculatePlayerStats(userId) {
 
   // 统计MVP次数：查询match_result表中mvpUserIds包含该userId的比赛数
   const mvpCount = await MatchResult.count({
-    where: {
-      mvpUserIds: {
-        [Op.like]: `%"${userId}"%`
-      }
-    }
+    where: sequelize.where(
+      sequelize.fn('JSON_CONTAINS', sequelize.col('mvp_user_ids'), sequelize.fn('JSON_QUOTE', userId)),
+      1
+    )
   });
 
   // 找到或创建球员统计记录
