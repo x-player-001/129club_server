@@ -147,6 +147,15 @@ async function recalculatePlayerStats(userId) {
   });
   totalAssists = assistEvents.length;
 
+  // 统计MVP次数：查询match_result表中mvpUserIds包含该userId的比赛数
+  const mvpCount = await MatchResult.count({
+    where: {
+      mvpUserIds: {
+        [Op.like]: `%"${userId}"%`
+      }
+    }
+  });
+
   // 找到或创建球员统计记录
   const [playerStat, created] = await PlayerStat.findOrCreate({
     where: { userId },
@@ -157,7 +166,8 @@ async function recalculatePlayerStats(userId) {
       wins: 0,
       draws: 0,
       losses: 0,
-      winRate: '0.00'
+      winRate: '0.00',
+      mvpCount: 0
     }
   });
 
@@ -165,10 +175,11 @@ async function recalculatePlayerStats(userId) {
   playerStat.matchesPlayed = allParticipations.length;
   playerStat.goals = totalGoals;
   playerStat.assists = totalAssists;
+  playerStat.mvpCount = mvpCount;
 
   await playerStat.save();
 
-  logger.info(`✅ Player stats recalculated for user ${userId}: ${playerStat.matchesPlayed} matches, ${totalGoals} goals, ${totalAssists} assists`);
+  logger.info(`✅ Player stats recalculated for user ${userId}: ${playerStat.matchesPlayed} matches, ${totalGoals} goals, ${totalAssists} assists, ${mvpCount} MVPs`);
 }
 
 /**
