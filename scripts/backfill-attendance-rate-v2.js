@@ -53,14 +53,23 @@ async function backfillAttendanceRateV2() {
         continue;
       }
 
+      // 重新从数据库统计该球员实际到场次数（幂等操作）
+      const actualMatchesPlayed = await MatchParticipant.count({
+        where: { userId: user.id }
+      });
+
       // 计算出勤率 = 到场次数 / 队伍比赛数 × 100
-      const attendanceRate = ((stat.matchesPlayed / teamMatchCount) * 100).toFixed(2);
+      const attendanceRate = ((actualMatchesPlayed / teamMatchCount) * 100).toFixed(2);
       const oldRate = stat.attendanceRate;
 
-      await stat.update({ attendanceRate });
+      // 同时更新matchesPlayed字段，确保数据一致性
+      await stat.update({
+        attendanceRate,
+        matchesPlayed: actualMatchesPlayed
+      });
 
       console.log(`✅ ${user.nickname}`);
-      console.log(`   到场: ${stat.matchesPlayed}场 / 队伍: ${teamMatchCount}场`);
+      console.log(`   到场: ${actualMatchesPlayed}场 / 队伍: ${teamMatchCount}场`);
       console.log(`   出勤率: ${oldRate}% → ${attendanceRate}%`);
       console.log('');
 
