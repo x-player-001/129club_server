@@ -286,8 +286,15 @@ async function unlockAchievement(userId, achievementId, seasonId, matchId, achie
     let userAchievement = await UserAchievement.findOne({ where: whereClause });
 
     if (userAchievement) {
-      // If repeatable, increment count
+      // If repeatable, check if it's a new occurrence (different match)
       if (achievement.isRepeatable) {
+        // If it's the same match, don't increment (avoid duplicate triggers)
+        if (userAchievement.matchId === matchId) {
+          logger.info(`Achievement ${achievement.code} already unlocked for match ${matchId}, skipping duplicate`);
+          return null;
+        }
+
+        // Different match - increment count
         await userAchievement.update({
           unlockCount: userAchievement.unlockCount + 1,
           unlockedAt: new Date(),
