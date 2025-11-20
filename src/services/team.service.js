@@ -122,17 +122,17 @@ exports.getTeamDetail = async (teamId) => {
     return null;
   }
 
-  // 对成员进行排序：队长排第一位，其他成员按号码排序
+  // 对成员进行排序：队长排第一位，其他成员按出场次数倒序排列
   if (team.members && team.members.length > 0) {
     team.members.sort((a, b) => {
       // 队长排第一位
       if (a.role === 'captain' && b.role !== 'captain') return -1;
       if (a.role !== 'captain' && b.role === 'captain') return 1;
 
-      // 其他成员按号码排序
-      const jerseyA = a.user?.jerseyNumber || 999;
-      const jerseyB = b.user?.jerseyNumber || 999;
-      return jerseyA - jerseyB;
+      // 其他成员按出场次数倒序排列（多到少）
+      const matchesA = a.user?.stats?.matchesPlayed || 0;
+      const matchesB = b.user?.stats?.matchesPlayed || 0;
+      return matchesB - matchesA;
     });
   }
 
