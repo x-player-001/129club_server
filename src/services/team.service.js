@@ -102,7 +102,7 @@ exports.getTeamDetail = async (teamId) => {
           {
             model: User,
             as: 'user',
-            attributes: ['id', 'nickname', 'realName', 'avatar', 'jerseyNumber', 'position', 'leftFootSkill', 'rightFootSkill'],
+            attributes: ['id', 'nickname', 'realName', 'avatar', 'jerseyNumber', 'position', 'leftFootSkill', 'rightFootSkill', 'memberType'],
             include: [
               {
                 model: PlayerStat,

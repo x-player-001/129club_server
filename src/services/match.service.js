@@ -406,7 +406,7 @@ exports.getRegistrationList = async (matchId) => {
       {
         model: User,
         as: 'user',
-        attributes: ['id', 'nickname', 'realName', 'avatar', 'jerseyNumber', 'position']
+        attributes: ['id', 'nickname', 'realName', 'avatar', 'jerseyNumber', 'position', 'memberType']
       },
       {
         model: Team,
