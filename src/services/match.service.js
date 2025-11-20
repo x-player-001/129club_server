@@ -388,6 +388,97 @@ exports.cancelRegister = async (matchId, userId) => {
 };
 
 /**
+ * 请假
+ * @param {string} matchId 比赛ID
+ * @param {string} userId 用户ID
+ * @param {Object} data 请假数据 { reason: string }
+ */
+exports.requestLeave = async (matchId, userId, data = {}) => {
+  // 获取比赛信息
+  const match = await Match.findByPk(matchId);
+  if (!match) {
+    throw new Error('比赛不存在');
+  }
+
+  // 获取用户信息
+  const user = await User.findByPk(userId);
+  if (!user) {
+    throw new Error('用户不存在');
+  }
+
+  // 查找报名记录
+  let registration = await Registration.findOne({
+    where: { matchId, userId }
+  });
+
+  if (registration) {
+    // 如果已有报名记录，检查是否已经是请假状态
+    if (registration.status === 'leave') {
+      throw new Error('您已经处于请假状态');
+    }
+
+    // 更新为请假状态
+    await registration.update({
+      status: 'leave',
+      notes: data.reason || '请假'
+    });
+
+    logger.info(`User requested leave (update): ${userId} -> ${matchId}, reason: ${data.reason || 'none'}`);
+  } else {
+    // 如果没有报名记录，创建一个请假记录
+    // 确定用户所属队伍
+    let teamId;
+    if (user.currentTeamId === match.team1Id) {
+      teamId = match.team1Id;
+    } else if (user.currentTeamId === match.team2Id) {
+      teamId = match.team2Id;
+    } else {
+      throw new Error('您不属于参赛队伍，无法请假');
+    }
+
+    // 创建请假记录
+    registration = await Registration.create({
+      matchId,
+      userId,
+      teamId,
+      status: 'leave',
+      notes: data.reason || '请假',
+      registeredAt: new Date()
+    });
+
+    logger.info(`User requested leave (create): ${userId} -> ${matchId}, team: ${teamId}, reason: ${data.reason || 'none'}`);
+  }
+
+  return registration;
+};
+
+/**
+ * 取消请假（删除请假记录）
+ * @param {string} matchId 比赛ID
+ * @param {string} userId 用户ID
+ */
+exports.cancelLeave = async (matchId, userId) => {
+  const registration = await Registration.findOne({
+    where: { matchId, userId }
+  });
+
+  if (!registration) {
+    throw new Error('未找到请假记录');
+  }
+
+  if (registration.status !== 'leave') {
+    throw new Error('当前不是请假状态');
+  }
+
+  // 删除请假记录（请假和报名是独立状态，取消请假就是删除记录）
+  await registration.destroy();
+
+  logger.info(`User cancelled leave (deleted): ${userId} -> ${matchId}`);
+
+  return { message: '已取消请假' };
+};
+
+/**
  * 获取比赛报名列表
  * @param {string} matchId 比赛ID
  */
@@ -397,10 +488,11 @@ exports.getRegistrationList = async (matchId) => {
     throw new Error('比赛不存在');
   }
 
+  // 获取所有报名记录（包括请假）
   const registrations = await Registration.findAll({
     where: {
       matchId,
-      status: { [Op.in]: ['registered', 'confirmed'] }
+      status: { [Op.in]: ['registered', 'confirmed', 'leave'] }
     },
     include: [
       {
@@ -417,15 +509,21 @@ exports.getRegistrationList = async (matchId) => {
     order: [['registeredAt', 'ASC']]
   });
 
-  // 按队伍分组
-  const team1Regs = registrations.filter(r => r.teamId === match.team1Id);
-  const team2Regs = registrations.filter(r => r.teamId === match.team2Id);
+  // 按队伍和状态分组
+  const team1Regs = registrations.filter(r => r.teamId === match.team1Id && (r.status === 'registered' || r.status === 'confirmed'));
+  const team2Regs = registrations.filter(r => r.teamId === match.team2Id && (r.status === 'registered' || r.status === 'confirmed'));
+  const team1Leave = registrations.filter(r => r.teamId === match.team1Id && r.status === 'leave');
+  const team2Leave = registrations.filter(r => r.teamId === match.team2Id && r.status === 'leave');
 
   return {
     team1: team1Regs,
     team2: team2Regs,
     team1Count: team1Regs.length,
-    team2Count: team2Regs.length
+    team2Count: team2Regs.length,
+    team1Leave: team1Leave,
+    team2Leave: team2Leave,
+    team1LeaveCount: team1Leave.length,
+    team2LeaveCount: team2Leave.length
   };
 };
 

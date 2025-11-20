@@ -79,6 +79,31 @@ exports.cancelRegister = async (ctx) => {
   }
 };
 
+// 请假
+exports.requestLeave = async (ctx) => {
+  try {
+    const { matchId } = ctx.params;
+    const userId = ctx.state.user.id;
+    const data = ctx.request.body;
+    const result = await matchService.requestLeave(matchId, userId, data);
+    success(ctx, result, '请假成功');
+  } catch (err) {
+    error(ctx, err.message);
+  }
+};
+
+// 取消请假
+exports.cancelLeave = async (ctx) => {
+  try {
+    const { matchId } = ctx.params;
+    const userId = ctx.state.user.id;
+    const result = await matchService.cancelLeave(matchId, userId);
+    success(ctx, result, '已取消请假');
+  } catch (err) {
+    error(ctx, err.message);
+  }
+};
+
 // 获取报名列表
 exports.getRegistrationList = async (ctx) => {
   try {

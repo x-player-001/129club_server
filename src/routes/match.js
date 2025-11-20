@@ -21,6 +21,12 @@ router.post('/:matchId/register', authMiddleware, matchController.registerMatch)
 // 取消报名
 router.delete('/:matchId/register', authMiddleware, matchController.cancelRegister);
 
+// 请假
+router.post('/:matchId/leave', authMiddleware, matchController.requestLeave);
+
+// 取消请假
+router.delete('/:matchId/leave', authMiddleware, matchController.cancelLeave);
+
 // 获取报名列表
 router.get('/:matchId/registration', authMiddleware, matchController.getRegistrationList);
 

@@ -206,7 +206,7 @@ exports.updateTeam = async (teamId, data, userId) => {
   }
 
   // 只允许更新特定字段
-  const allowedFields = ['name', 'logo', 'color'];
+  const allowedFields = ['name', 'logo', 'color', 'captainId'];
   const updateData = {};
 
   allowedFields.forEach(field => {
@@ -214,6 +214,64 @@ exports.updateTeam = async (teamId, data, userId) => {
       updateData[field] = data[field];
     }
   });
+
+  // 如果更新了队长，需要同步更新 team_members 表和 users 表中的角色
+  if (data.captainId && data.captainId !== team.captainId) {
+    const { TeamMember } = require('../models');
+
+    // 验证新队长是否在该队伍中
+    const newCaptainMembership = await TeamMember.findOne({
+      where: { teamId, userId: data.captainId, isActive: true }
+    });
+
+    if (!newCaptainMembership) {
+      throw new Error('新队长必须是队伍成员');
+    }
+
+    // 将原队长降为普通成员
+    if (team.captainId) {
+      // 更新 team_members 表
+      await TeamMember.update(
+        { role: 'member' },
+        { where: { teamId, userId: team.captainId } }
+      );
+
+      // 更新 users 表（只有当原队长不是 super_admin 时才降级）
+      const oldCaptain = await User.findByPk(team.captainId);
+      if (oldCaptain && oldCaptain.role === 'captain') {
+        await oldCaptain.update({ role: 'member' });
+      }
+    }
+
+    // 将新队长设置为队长角色
+    // 更新 team_members 表
+    await TeamMember.update(
+      { role: 'captain' },
+      { where: { teamId, userId: data.captainId } }
+    );
+
+    // 更新 users 表
+    const newCaptain = await User.findByPk(data.captainId);
+    if (newCaptain) {
+      const updates = {};
+
+      // 更新角色（只有当新队长不是 super_admin 时才升级）
+      if (newCaptain.role !== 'super_admin') {
+        updates.role = 'captain';
+      }
+
+      // 更新当前队伍ID（确保新队长的 current_team_id 指向这个队伍）
+      if (newCaptain.currentTeamId !== teamId) {
+        updates.currentTeamId = teamId;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await newCaptain.update(updates);
+      }
+    }
+
+    logger.info(`Team captain changed: ${team.captainId} -> ${data.captainId}`);
+  }
 
   await team.update(updateData);
 

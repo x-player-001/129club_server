@@ -389,6 +389,21 @@ exports.completeSeason = async (seasonId) => {
     throw new Error('赛季已经完成');
   }
 
+  // 检查该赛季下是否还有未完成的比赛
+  const { Match } = require('../models');
+  const incompleteMatches = await Match.findAll({
+    where: {
+      seasonId,
+      status: { [Op.ne]: 'completed' }
+    },
+    attributes: ['id', 'title', 'status']
+  });
+
+  if (incompleteMatches.length > 0) {
+    const matchTitles = incompleteMatches.map(m => m.title).join('、');
+    throw new Error(`该赛季还有 ${incompleteMatches.length} 场未完成的比赛，请先完成所有比赛。未完成比赛：${matchTitles}`);
+  }
+
   await season.update({
     status: 'completed',
     completedAt: new Date()
