@@ -142,6 +142,12 @@ exports.getTeamDetail = async (teamId) => {
     team.setDataValue('season', team.seasonInfo.name);
   }
 
+  // 处理 stats 中的 season 字段：改为赛季名称，添加 seasonId 字段
+  if (team.stats && team.seasonInfo) {
+    team.stats.setDataValue('seasonId', team.stats.season); // 保存原 UUID 到 seasonId
+    team.stats.setDataValue('season', team.seasonInfo.name); // season 改为名称
+  }
+
   // 对成员进行排序：队长排第一位，其他成员按出场次数倒序排列
   if (team.members && team.members.length > 0) {
     team.members.sort((a, b) => {

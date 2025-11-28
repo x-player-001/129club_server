@@ -45,7 +45,8 @@
       "Bash(d:/Code/MiniProgram/129club/129club_server/scripts/129club_remote_backup.sql)",
       "Bash(cmd /c scriptssync-from-remote.bat)",
       "Bash(129club_remote_sync.sql)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []
