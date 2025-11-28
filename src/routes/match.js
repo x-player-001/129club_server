@@ -48,4 +48,7 @@ router.get('/:matchId/participants', authMiddleware, matchController.getMatchPar
 // 设置比赛参赛球员（实际到场球员）
 router.post('/:matchId/participants', authMiddleware, matchController.setMatchParticipants);
 
+// 获取比赛可选球员列表（用于录入比赛事件）
+router.get('/:matchId/selectable-players', authMiddleware, matchController.getSelectablePlayers);
+
 module.exports = router;

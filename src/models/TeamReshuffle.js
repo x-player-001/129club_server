@@ -9,9 +9,10 @@ const TeamReshuffle = sequelize.define('TeamReshuffle', {
     comment: '重组ID'
   },
   season: {
-    type: DataTypes.STRING(20),
+    type: DataTypes.UUID,
     allowNull: false,
-    comment: '赛季'
+    field: 'season_id',
+    comment: '赛季ID'
   },
   initiatorId: {
     type: DataTypes.UUID,

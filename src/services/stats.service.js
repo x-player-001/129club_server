@@ -1,11 +1,13 @@
-const { Match, MatchResult, MatchParticipant, Season, Team, User, PlayerStat } = require('../models');
+const { Match, MatchResult, MatchParticipant, Season, Team, User, PlayerStat, PlayerTeamStat } = require('../models');
 const { Op, literal } = require('sequelize');
 const sequelize = require('../config/database');
 const logger = require('../utils/logger');
 
-exports.getOverview = async (userId, filterType = 'season') => {
+exports.getOverview = async (userId, filterType = 'season', seasonId = null) => {
   try {
-    const { seasonFilter, dateFilter } = await getDateFilter(filterType);
+    const { seasonFilter, dateFilter } = await getDateFilter(filterType, seasonId);
+
+    logger.info(`getOverview - filterType: ${filterType}, seasonId: ${seasonId}, seasonFilter: ${JSON.stringify(seasonFilter)}, dateFilter: ${JSON.stringify(dateFilter)}`);
 
     const matches = await Match.findAll({
       where: {
@@ -44,9 +46,11 @@ exports.getOverview = async (userId, filterType = 'season') => {
       order: [['matchDate', 'DESC']]
     });
 
-    const summary = calculateSummary(matches);
+    logger.info(`getOverview - matches found: ${matches.length}`);
+
+    const summary = await calculateSummary(matches, seasonFilter);
     const myStats = await calculateMyStats(matches, userId, seasonFilter, dateFilter);
-    const myRanking = await calculateMyRanking(matches, userId);
+    const myRanking = await calculateMyRanking(matches, userId, seasonFilter);
     const teamStats = await calculateTeamStats(matches, userId);
     const recentMatches = await formatRecentMatches(matches.slice(0, 5), userId);
 
@@ -63,8 +67,16 @@ exports.getOverview = async (userId, filterType = 'season') => {
   }
 };
 
-async function getDateFilter(filterType) {
+async function getDateFilter(filterType, seasonId = null) {
   const now = new Date();
+
+  // 如果提供了显式的 seasonId，优先使用它
+  if (seasonId) {
+    return {
+      seasonFilter: { seasonId },
+      dateFilter: {}
+    };
+  }
 
   switch (filterType) {
     case 'month': {
@@ -116,22 +128,42 @@ async function getDateFilter(filterType) {
   }
 }
 
-function calculateSummary(matches) {
+async function calculateSummary(matches, seasonFilter) {
   let totalGoals = 0;
   let totalAssists = 0;
 
+  // 计算总进球数（从比赛结果）
   matches.forEach(match => {
     if (match.result) {
       if (match.result.team1Score) totalGoals += match.result.team1Score;
       if (match.result.team2Score) totalGoals += match.result.team2Score;
     }
-
-    if (match.participants) {
-      match.participants.forEach(participant => {
-        if (participant.assists) totalAssists += participant.assists;
-      });
-    }
   });
+
+  // 判断是否是赛季筛选
+  const isSeasonFilter = seasonFilter && seasonFilter.seasonId;
+
+  // 计算总助攻数（从球员统计表）
+  if (isSeasonFilter) {
+    // 从 PlayerTeamStat 聚合赛季数据
+    const seasonStats = await PlayerTeamStat.findAll({
+      where: { season: seasonFilter.seasonId },
+      attributes: [
+        [sequelize.fn('SUM', sequelize.col('assists')), 'totalAssists']
+      ],
+      raw: true
+    });
+    totalAssists = seasonStats[0]?.totalAssists || 0;
+  } else {
+    // 从 PlayerStat 全局统计
+    const globalStats = await PlayerStat.findAll({
+      attributes: [
+        [sequelize.fn('SUM', sequelize.col('assists')), 'totalAssists']
+      ],
+      raw: true
+    });
+    totalAssists = globalStats[0]?.totalAssists || 0;
+  }
 
   return {
     totalMatches: matches.length,
@@ -141,11 +173,6 @@ function calculateSummary(matches) {
 }
 
 async function calculateMyStats(matches, userId, seasonFilter, dateFilter) {
-  // 从 PlayerStat 表获取进球、助攻、MVP数据（与 /api/stats/player/{id} 接口保持一致）
-  const myPlayerStat = await PlayerStat.findOne({
-    where: { userId }
-  });
-
   const myParticipations = await MatchParticipant.findAll({
     where: { userId },
     include: [
@@ -168,10 +195,34 @@ async function calculateMyStats(matches, userId, seasonFilter, dateFilter) {
     ]
   });
 
-  // 从 PlayerStat 获取累计数据
-  const totalGoals = myPlayerStat ? myPlayerStat.goals : 0;
-  const totalAssists = myPlayerStat ? myPlayerStat.assists : 0;
-  const totalMvp = myPlayerStat ? myPlayerStat.mvpCount : 0;
+  let totalGoals = 0;
+  let totalAssists = 0;
+  let totalMvp = 0;
+
+  // 判断是否是赛季筛选
+  const isSeasonFilter = seasonFilter && seasonFilter.seasonId;
+
+  if (isSeasonFilter) {
+    // 从 PlayerTeamStat 聚合赛季数据
+    const seasonStats = await PlayerTeamStat.findAll({
+      where: { userId, season: seasonFilter.seasonId }
+    });
+
+    if (seasonStats.length > 0) {
+      totalGoals = seasonStats.reduce((sum, s) => sum + s.goals, 0);
+      totalAssists = seasonStats.reduce((sum, s) => sum + s.assists, 0);
+      totalMvp = seasonStats.reduce((sum, s) => sum + s.mvpCount, 0);
+    }
+  } else {
+    // 从 PlayerStat 获取累计数据
+    const myPlayerStat = await PlayerStat.findOne({
+      where: { userId }
+    });
+
+    totalGoals = myPlayerStat ? myPlayerStat.goals : 0;
+    totalAssists = myPlayerStat ? myPlayerStat.assists : 0;
+    totalMvp = myPlayerStat ? myPlayerStat.mvpCount : 0;
+  }
 
   // 计算胜率（仅针对当前筛选的比赛）
   let wins = 0;
@@ -205,66 +256,133 @@ async function calculateMyStats(matches, userId, seasonFilter, dateFilter) {
   };
 }
 
-async function calculateMyRanking(matches, userId) {
-  // 从 PlayerStat 表获取排名数据（与 getRanking 接口保持一致）
+async function calculateMyRanking(matches, userId, seasonFilter) {
+  // 判断是否是赛季筛选
+  const isSeasonFilter = seasonFilter && seasonFilter.seasonId;
 
-  // 先获取当前用户的统计数据
-  const myStats = await PlayerStat.findOne({
-    where: { userId }
-  });
+  if (isSeasonFilter) {
+    // 从 PlayerTeamStat 聚合赛季数据
+    const seasonStats = await PlayerTeamStat.findAll({
+      where: { userId, season: seasonFilter.seasonId }
+    });
 
-  if (!myStats) {
+    if (seasonStats.length === 0) {
+      return {
+        goalsRank: null,
+        assistsRank: null,
+        attendanceRank: null
+      };
+    }
+
+    const myGoals = seasonStats.reduce((sum, s) => sum + s.goals, 0);
+    const myAssists = seasonStats.reduce((sum, s) => sum + s.assists, 0);
+    const myMatches = seasonStats.reduce((sum, s) => sum + s.matchesPlayed, 0);
+
+    // 计算赛季排名（使用 SQL GROUP BY 聚合）
+    const [goalsRankResult] = await sequelize.query(`
+      SELECT COUNT(*) as \`rank\` FROM (
+        SELECT user_id, SUM(goals) as total_goals, SUM(matches_played) as total_matches
+        FROM player_team_stats
+        WHERE season_id = :seasonId
+        GROUP BY user_id
+        HAVING total_goals > :goals OR (total_goals = :goals AND total_matches > :matches)
+      ) as ranked_players
+    `, {
+      replacements: { seasonId: seasonFilter.seasonId, goals: myGoals, matches: myMatches },
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    const [assistsRankResult] = await sequelize.query(`
+      SELECT COUNT(*) as \`rank\` FROM (
+        SELECT user_id, SUM(assists) as total_assists, SUM(matches_played) as total_matches
+        FROM player_team_stats
+        WHERE season_id = :seasonId
+        GROUP BY user_id
+        HAVING total_assists > :assists OR (total_assists = :assists AND total_matches > :matches)
+      ) as ranked_players
+    `, {
+      replacements: { seasonId: seasonFilter.seasonId, assists: myAssists, matches: myMatches },
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    // 出勤榜：赛季模式下使用比赛场次排名
+    const [attendanceRankResult] = await sequelize.query(`
+      SELECT COUNT(*) as \`rank\` FROM (
+        SELECT user_id, SUM(matches_played) as total_matches
+        FROM player_team_stats
+        WHERE season_id = :seasonId
+        GROUP BY user_id
+        HAVING total_matches > :matches
+      ) as ranked_players
+    `, {
+      replacements: { seasonId: seasonFilter.seasonId, matches: myMatches },
+      type: sequelize.QueryTypes.SELECT
+    });
+
     return {
-      goalsRank: null,
-      assistsRank: null,
-      attendanceRank: null
+      goalsRank: goalsRankResult.rank + 1,
+      assistsRank: assistsRankResult.rank + 1,
+      attendanceRank: attendanceRankResult.rank + 1
+    };
+  } else {
+    // 从 PlayerStat 表获取排名数据（全局累计）
+    const myStats = await PlayerStat.findOne({
+      where: { userId }
+    });
+
+    if (!myStats) {
+      return {
+        goalsRank: null,
+        assistsRank: null,
+        attendanceRank: null
+      };
+    }
+
+    // 射手榜排名：比我进球多的人数 + 1
+    const goalsRank = await PlayerStat.count({
+      where: {
+        [Op.or]: [
+          { goals: { [Op.gt]: myStats.goals } },
+          {
+            goals: myStats.goals,
+            matchesPlayed: { [Op.gt]: myStats.matchesPlayed }
+          }
+        ]
+      }
+    });
+
+    // 助攻榜排名：比我助攻多的人数 + 1
+    const assistsRank = await PlayerStat.count({
+      where: {
+        [Op.or]: [
+          { assists: { [Op.gt]: myStats.assists } },
+          {
+            assists: myStats.assists,
+            matchesPlayed: { [Op.gt]: myStats.matchesPlayed }
+          }
+        ]
+      }
+    });
+
+    // 出勤榜排名：比我出勤多的人数 + 1
+    const attendanceRank = await PlayerStat.count({
+      where: {
+        [Op.or]: [
+          { matchesPlayed: { [Op.gt]: myStats.matchesPlayed } },
+          {
+            matchesPlayed: myStats.matchesPlayed,
+            attendanceRate: { [Op.gt]: myStats.attendanceRate }
+          }
+        ]
+      }
+    });
+
+    return {
+      goalsRank: goalsRank + 1,
+      assistsRank: assistsRank + 1,
+      attendanceRank: attendanceRank + 1
     };
   }
-
-  // 射手榜排名：比我进球多的人数 + 1
-  const goalsRank = await PlayerStat.count({
-    where: {
-      [Op.or]: [
-        { goals: { [Op.gt]: myStats.goals } },
-        {
-          goals: myStats.goals,
-          matchesPlayed: { [Op.gt]: myStats.matchesPlayed }
-        }
-      ]
-    }
-  });
-
-  // 助攻榜排名：比我助攻多的人数 + 1
-  const assistsRank = await PlayerStat.count({
-    where: {
-      [Op.or]: [
-        { assists: { [Op.gt]: myStats.assists } },
-        {
-          assists: myStats.assists,
-          matchesPlayed: { [Op.gt]: myStats.matchesPlayed }
-        }
-      ]
-    }
-  });
-
-  // 出勤榜排名：比我出勤多的人数 + 1
-  const attendanceRank = await PlayerStat.count({
-    where: {
-      [Op.or]: [
-        { matchesPlayed: { [Op.gt]: myStats.matchesPlayed } },
-        {
-          matchesPlayed: myStats.matchesPlayed,
-          attendanceRate: { [Op.gt]: myStats.attendanceRate }
-        }
-      ]
-    }
-  });
-
-  return {
-    goalsRank: goalsRank + 1,
-    assistsRank: assistsRank + 1,
-    attendanceRank: attendanceRank + 1
-  };
 }
 
 async function calculateTeamStats(matches, userId) {
@@ -388,8 +506,11 @@ async function formatRecentMatches(matches, userId) {
   });
 }
 
-exports.getPlayerStats = async (userId, params) => {
+exports.getPlayerStats = async (userId, params = {}) => {
   try {
+    const { seasonId, season } = params;
+    // 兼容旧参数名，优先使用 seasonId
+    const actualSeasonId = seasonId || season;
     const { User, PlayerStat, Team, UserAchievement, Achievement } = require('../models');
 
     // 1. 获取用户基本信息
@@ -406,10 +527,47 @@ exports.getPlayerStats = async (userId, params) => {
       throw new Error('User not found');
     }
 
-    // 2. 获取用户统计数据
-    let playerStat = await PlayerStat.findOne({
-      where: { userId }
-    });
+    // 2. 判断是否查询赛季数据
+    let usePlayerTeamStat = false;
+    if (actualSeasonId) {
+      usePlayerTeamStat = true;
+    }
+
+    // 3. 获取用户统计数据
+    let playerStat;
+    if (usePlayerTeamStat) {
+      // 查询赛季数据 - 从 PlayerTeamStat 表
+      // 球员可能在一个赛季中为多个队伍效力，需要汇总
+      const seasonStats = await PlayerTeamStat.findAll({
+        where: { userId, season: actualSeasonId }
+      });
+
+      if (seasonStats.length > 0) {
+        // 汇总该球员在该赛季所有队伍的数据
+        playerStat = {
+          matchesPlayed: seasonStats.reduce((sum, s) => sum + s.matchesPlayed, 0),
+          goals: seasonStats.reduce((sum, s) => sum + s.goals, 0),
+          assists: seasonStats.reduce((sum, s) => sum + s.assists, 0),
+          mvpCount: seasonStats.reduce((sum, s) => sum + s.mvpCount, 0),
+          wins: seasonStats.reduce((sum, s) => sum + s.wins, 0),
+          draws: seasonStats.reduce((sum, s) => sum + s.draws, 0),
+          losses: seasonStats.reduce((sum, s) => sum + s.losses, 0),
+          yellowCards: seasonStats.reduce((sum, s) => sum + s.yellowCards, 0),
+          redCards: seasonStats.reduce((sum, s) => sum + s.redCards, 0)
+        };
+        // 计算胜率
+        const totalMatches = playerStat.wins + playerStat.draws + playerStat.losses;
+        playerStat.winRate = totalMatches > 0 ? ((playerStat.wins / totalMatches) * 100).toFixed(2) : '0.00';
+        playerStat.attendanceRate = '0.00'; // 赛季数据暂不计算出勤率
+      } else {
+        playerStat = null;
+      }
+    } else {
+      // 查询总统计数据 - 从 PlayerStat 表
+      playerStat = await PlayerStat.findOne({
+        where: { userId }
+      });
+    }
 
     // 如果没有统计记录，创建一个默认的
     if (!playerStat) {
@@ -428,16 +586,34 @@ exports.getPlayerStats = async (userId, params) => {
       };
     }
 
-    // 3. 计算排名
+    // 4. 计算排名（使用相应的数据源）
     const rankings = {};
+    const RankModel = usePlayerTeamStat ? PlayerTeamStat : PlayerStat;
+    const rankWhere = usePlayerTeamStat ? { season: seasonId } : {};
 
     // 射手榜排名
     if (playerStat.goals > 0) {
-      const goalsRank = await PlayerStat.count({
-        where: {
-          goals: { [Op.gt]: playerStat.goals }
-        }
-      });
+      let goalsRank;
+      if (usePlayerTeamStat) {
+        // 赛季排名：需要按userId分组汇总后排名
+        const [result] = await sequelize.query(`
+          SELECT COUNT(*) as rank FROM (
+            SELECT user_id, SUM(goals) as total_goals
+            FROM player_team_stats
+            WHERE season_id = :seasonId
+            GROUP BY user_id
+            HAVING total_goals > :goals
+          ) as ranked_players
+        `, {
+          replacements: { seasonId, goals: playerStat.goals },
+          type: sequelize.QueryTypes.SELECT
+        });
+        goalsRank = result.rank;
+      } else {
+        goalsRank = await PlayerStat.count({
+          where: { goals: { [Op.gt]: playerStat.goals } }
+        });
+      }
       rankings.goals = goalsRank + 1;
     } else {
       rankings.goals = null;
@@ -445,11 +621,26 @@ exports.getPlayerStats = async (userId, params) => {
 
     // 助攻榜排名
     if (playerStat.assists > 0) {
-      const assistsRank = await PlayerStat.count({
-        where: {
-          assists: { [Op.gt]: playerStat.assists }
-        }
-      });
+      let assistsRank;
+      if (usePlayerTeamStat) {
+        const [result] = await sequelize.query(`
+          SELECT COUNT(*) as rank FROM (
+            SELECT user_id, SUM(assists) as total_assists
+            FROM player_team_stats
+            WHERE season_id = :seasonId
+            GROUP BY user_id
+            HAVING total_assists > :assists
+          ) as ranked_players
+        `, {
+          replacements: { seasonId, assists: playerStat.assists },
+          type: sequelize.QueryTypes.SELECT
+        });
+        assistsRank = result.rank;
+      } else {
+        assistsRank = await PlayerStat.count({
+          where: { assists: { [Op.gt]: playerStat.assists } }
+        });
+      }
       rankings.assists = assistsRank + 1;
     } else {
       rankings.assists = null;
@@ -457,29 +648,48 @@ exports.getPlayerStats = async (userId, params) => {
 
     // MVP榜排名
     if (playerStat.mvpCount > 0) {
-      const mvpRank = await PlayerStat.count({
-        where: {
-          mvpCount: { [Op.gt]: playerStat.mvpCount }
-        }
-      });
+      let mvpRank;
+      if (usePlayerTeamStat) {
+        const [result] = await sequelize.query(`
+          SELECT COUNT(*) as rank FROM (
+            SELECT user_id, SUM(mvp_count) as total_mvp
+            FROM player_team_stats
+            WHERE season_id = :seasonId
+            GROUP BY user_id
+            HAVING total_mvp > :mvpCount
+          ) as ranked_players
+        `, {
+          replacements: { seasonId, mvpCount: playerStat.mvpCount },
+          type: sequelize.QueryTypes.SELECT
+        });
+        mvpRank = result.rank;
+      } else {
+        mvpRank = await PlayerStat.count({
+          where: { mvpCount: { [Op.gt]: playerStat.mvpCount } }
+        });
+      }
       rankings.mvp = mvpRank + 1;
     } else {
       rankings.mvp = null;
     }
 
-    // 出勤榜排名（按到场次数）
-    const attendanceRank = await PlayerStat.count({
-      where: {
-        [Op.or]: [
-          { matchesPlayed: { [Op.gt]: playerStat.matchesPlayed } },
-          {
-            matchesPlayed: playerStat.matchesPlayed,
-            attendanceRate: { [Op.gt]: playerStat.attendanceRate }
-          }
-        ]
-      }
-    });
-    rankings.attendance = attendanceRank + 1;
+    // 出勤榜排名（只在总统计中有效）
+    if (!usePlayerTeamStat) {
+      const attendanceRank = await PlayerStat.count({
+        where: {
+          [Op.or]: [
+            { matchesPlayed: { [Op.gt]: playerStat.matchesPlayed } },
+            {
+              matchesPlayed: playerStat.matchesPlayed,
+              attendanceRate: { [Op.gt]: playerStat.attendanceRate }
+            }
+          ]
+        }
+      });
+      rankings.attendance = attendanceRank + 1;
+    } else {
+      rankings.attendance = null; // 赛季数据不计算出勤排名
+    }
 
     // 4. 获取成就列表
     const userAchievements = await UserAchievement.findAll({
@@ -665,10 +875,14 @@ exports.getRanking = async (type, params = {}) => {
     const {
       scope = 'all',
       teamId,
-      season,
+      seasonId,
+      season,  // 兼容旧参数名
       page = 1,
       pageSize = 50
     } = params;
+
+    // 优先使用 seasonId
+    const actualSeasonId = seasonId || season;
 
     const offset = (page - 1) * pageSize;
     const limit = parseInt(pageSize);
@@ -687,6 +901,12 @@ exports.getRanking = async (type, params = {}) => {
       attendance: 'matchesPlayed'  // 出勤榜按到场次数排序
     };
     const orderField = orderFieldMap[type];
+
+    // 如果提供了seasonId，使用 PlayerTeamStat 表
+    let usePlayerTeamStat = false;
+    if (actualSeasonId) {
+      usePlayerTeamStat = true;
+    }
 
     // 构建查询条件
     const include = [
@@ -717,8 +937,12 @@ exports.getRanking = async (type, params = {}) => {
     // 构建查询条件
     const whereCondition = {};
 
+    // 如果查询赛季数据，添加赛季筛选
+    if (usePlayerTeamStat && actualSeasonId) {
+      whereCondition.season = actualSeasonId;
+    }
+
     // 对于非出勤榜，只显示至少参加过1场比赛的球员
-    // 对于出勤榜，显示所有球员（包括缺勤的）
     if (type !== 'attendance') {
       whereCondition.matchesPlayed = { [Op.gt]: 0 };
     }
@@ -727,8 +951,8 @@ exports.getRanking = async (type, params = {}) => {
     const orderRules = [[orderField, 'DESC']];
 
     // 对于非出勤榜，次要排序按参赛场次
-    // 对于出勤榜，次要排序按出勤率
-    if (type === 'attendance') {
+    // 对于出勤榜，PlayerTeamStat没有attendanceRate字段，只按matchesPlayed排序
+    if (type === 'attendance' && !usePlayerTeamStat) {
       orderRules.push(['attendanceRate', 'DESC']);
     } else {
       orderRules.push(['matchesPlayed', 'DESC']);
@@ -737,14 +961,36 @@ exports.getRanking = async (type, params = {}) => {
     // 第三排序：进球数
     orderRules.push(['goals', 'DESC']);
 
-    // 查询PlayerStat数据
-    const { count, rows } = await PlayerStat.findAndCountAll({
+    // 根据是否查询赛季数据，选择使用 PlayerTeamStat 或 PlayerStat
+    const Model = usePlayerTeamStat ? PlayerTeamStat : PlayerStat;
+    const { count, rows } = await Model.findAndCountAll({
       include,
       where: whereCondition,
       order: orderRules,
       offset,
       limit
     });
+
+    // 如果是出勤榜且使用 PlayerTeamStat，需要计算队伍总场次来算出勤率
+    let teamMatchCounts = {};
+    if (type === 'attendance' && usePlayerTeamStat) {
+      const { Team } = require('../models');
+      // 获取所有涉及的队伍及其总场次
+      const teamIds = [...new Set(rows.map(r => r.teamId))];
+      for (const teamId of teamIds) {
+        const teamMatchCount = await Match.count({
+          where: {
+            status: 'completed',
+            seasonId: actualSeasonId,
+            [Op.or]: [
+              { team1Id: teamId },
+              { team2Id: teamId }
+            ]
+          }
+        });
+        teamMatchCounts[teamId] = teamMatchCount;
+      }
+    }
 
     // 格式化返回数据
     const list = rows.map((stat, index) => {
@@ -778,7 +1024,16 @@ exports.getRanking = async (type, params = {}) => {
         baseData.goals = stat.goals;
         baseData.assists = stat.assists;
       } else if (type === 'attendance') {
-        baseData.attendanceRate = parseFloat(stat.attendanceRate || 0);
+        // 如果使用 PlayerTeamStat，动态计算出勤率
+        if (usePlayerTeamStat && stat.teamId && teamMatchCounts[stat.teamId]) {
+          const teamTotal = teamMatchCounts[stat.teamId];
+          baseData.attendanceRate = teamTotal > 0
+            ? parseFloat(((stat.matchesPlayed / teamTotal) * 100).toFixed(2))
+            : 0;
+        } else {
+          // 使用 PlayerStat 的 attendanceRate 字段
+          baseData.attendanceRate = parseFloat(stat.attendanceRate || 0);
+        }
         baseData.matchesPlayed = stat.matchesPlayed;
       }
 

@@ -18,4 +18,7 @@ router.get('/members', authMiddleware, userController.getMemberList);
 // 获取成员详情
 router.get('/members/:userId', authMiddleware, userController.getMemberDetail);
 
+// 获取号码墙数据
+router.get('/jersey-numbers', authMiddleware, userController.getJerseyNumbers);
+
 module.exports = router;

@@ -61,6 +61,36 @@ const MatchQuarter = sequelize.define('MatchQuarter', {
     defaultValue: 'in_progress',
     comment: '节次状态：in_progress=进行中, completed=已完成'
   },
+  mainRefereeId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'main_referee_id',
+    comment: '主裁判ID'
+  },
+  assistantReferee1Id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'assistant_referee1_id',
+    comment: '边裁1 ID'
+  },
+  assistantReferee2Id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'assistant_referee2_id',
+    comment: '边裁2 ID'
+  },
+  team1GoalkeeperId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'team1_goalkeeper_id',
+    comment: '队伍1守门员ID'
+  },
+  team2GoalkeeperId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'team2_goalkeeper_id',
+    comment: '队伍2守门员ID'
+  },
   createdAt: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,

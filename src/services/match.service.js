@@ -719,6 +719,7 @@ exports.submitResult = async (matchId, data, userId) => {
   logger.info(`Match result submitted: ${matchId}, ${team1Score}:${team2Score}`);
 
   // TODO: 触发统计计算(在统计计算脚本中实现)
+  // 注意：球员统计数据(进球/助攻/胜负等)应该在supplement-result接口中通过recalculatePlayerStats幂等更新
 
   return result;
 };
@@ -840,5 +841,119 @@ exports.setMatchParticipants = async (matchId, data) => {
     team2Count: team2 ? team2.length : 0,
     totalCount: participants.length,
     participants
+  };
+};
+
+/**
+ * 获取比赛可选球员列表（用于录入比赛事件）
+ * @param {string} matchId 比赛ID
+ * @param {string} teamId 队伍ID
+ */
+exports.getSelectablePlayers = async (matchId, teamId) => {
+  // 验证比赛和队伍
+  const match = await Match.findByPk(matchId);
+  if (!match) {
+    throw new Error('比赛不存在');
+  }
+
+  if (teamId !== match.team1Id && teamId !== match.team2Id) {
+    throw new Error('队伍不属于该比赛');
+  }
+
+  // 1. 获取已报名该比赛的球员
+  const registrations = await Registration.findAll({
+    where: {
+      matchId,
+      teamId,
+      status: ['registered', 'confirmed']
+    },
+    include: [
+      {
+        model: User,
+        as: 'user',
+        attributes: ['id', 'realName', 'nickname', 'avatar', 'jerseyNumber', 'position', 'playerStatus']
+      }
+    ],
+    order: [['registeredAt', 'ASC']]
+  });
+
+  const registeredPlayers = registrations.map(reg => ({
+    id: reg.user.id,
+    realName: reg.user.realName,
+    nickname: reg.user.nickname,
+    avatar: reg.user.avatar,
+    jerseyNumber: reg.user.jerseyNumber,
+    position: reg.user.position,
+    playerStatus: reg.user.playerStatus,
+    isRegistered: true
+  }));
+
+  const registeredUserIds = registeredPlayers.map(p => p.id);
+
+  // 2. 获取该队伍所有非虚拟球员（未报名的）
+  const unregisteredPlayers = await User.findAll({
+    where: {
+      currentTeamId: teamId,
+      playerStatus: {
+        [Op.ne]: 'virtual'
+      },
+      id: {
+        [Op.notIn]: registeredUserIds.length > 0 ? registeredUserIds : ['']
+      }
+    },
+    attributes: ['id', 'realName', 'nickname', 'avatar', 'jerseyNumber', 'position', 'playerStatus'],
+    order: [['jerseyNumber', 'ASC']]
+  });
+
+  const unregisteredPlayersList = unregisteredPlayers.map(user => ({
+    id: user.id,
+    realName: user.realName,
+    nickname: user.nickname,
+    avatar: user.avatar,
+    jerseyNumber: user.jerseyNumber,
+    position: user.position,
+    playerStatus: user.playerStatus,
+    isRegistered: false
+  }));
+
+  // 3. 获取该队伍的虚拟球员
+  const virtualPlayers = await User.findAll({
+    where: {
+      currentTeamId: teamId,
+      playerStatus: 'virtual'
+    },
+    attributes: ['id', 'realName', 'nickname', 'avatar', 'jerseyNumber', 'position', 'playerStatus'],
+    order: [['jerseyNumber', 'ASC']]
+  });
+
+  const virtualPlayersList = virtualPlayers.map(user => ({
+    id: user.id,
+    realName: user.realName,
+    nickname: user.nickname,
+    avatar: user.avatar,
+    jerseyNumber: user.jerseyNumber,
+    position: user.position,
+    playerStatus: user.playerStatus,
+    isVirtual: true
+  }));
+
+  return {
+    registeredPlayers,
+    unregisteredPlayers: unregisteredPlayersList,
+    virtualPlayers: virtualPlayersList,
+    categories: {
+      registered: {
+        label: '已报名',
+        count: registeredPlayers.length
+      },
+      unregistered: {
+        label: '未报名',
+        count: unregisteredPlayersList.length
+      },
+      virtual: {
+        label: '虚拟球员',
+        count: virtualPlayersList.length
+      }
+    }
   };
 };

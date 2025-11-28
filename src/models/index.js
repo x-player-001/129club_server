@@ -36,6 +36,7 @@ User.hasMany(Notice, { foreignKey: 'publisherId', as: 'notices' });
 
 // Team 关联
 Team.belongsTo(User, { foreignKey: 'captainId', as: 'captain' });
+Team.belongsTo(Season, { foreignKey: 'season', as: 'seasonInfo' });
 Team.hasMany(TeamMember, { foreignKey: 'teamId', as: 'members' });
 Team.hasOne(TeamStat, { foreignKey: 'teamId', as: 'stats' });
 Team.hasMany(PlayerTeamStat, { foreignKey: 'teamId', as: 'playerStats' });
@@ -116,6 +117,11 @@ Notice.belongsTo(User, { foreignKey: 'publisherId', as: 'publisher' });
 
 // MatchQuarter 关联
 MatchQuarter.belongsTo(Match, { foreignKey: 'matchId', as: 'match' });
+MatchQuarter.belongsTo(User, { foreignKey: 'mainRefereeId', as: 'mainReferee' });
+MatchQuarter.belongsTo(User, { foreignKey: 'assistantReferee1Id', as: 'assistantReferee1' });
+MatchQuarter.belongsTo(User, { foreignKey: 'assistantReferee2Id', as: 'assistantReferee2' });
+MatchQuarter.belongsTo(User, { foreignKey: 'team1GoalkeeperId', as: 'team1Goalkeeper' });
+MatchQuarter.belongsTo(User, { foreignKey: 'team2GoalkeeperId', as: 'team2Goalkeeper' });
 
 // MatchParticipant 关联
 MatchParticipant.belongsTo(Match, { foreignKey: 'matchId', as: 'match' });

@@ -441,6 +441,38 @@ exports.getMatchWithQuarters = async (matchId) => {
       {
         model: MatchQuarter,
         as: 'quarters',
+        include: [
+          {
+            model: User,
+            as: 'mainReferee',
+            attributes: ['id', 'realName', 'nickname', 'avatar', 'jerseyNumber'],
+            required: false
+          },
+          {
+            model: User,
+            as: 'assistantReferee1',
+            attributes: ['id', 'realName', 'nickname', 'avatar', 'jerseyNumber'],
+            required: false
+          },
+          {
+            model: User,
+            as: 'assistantReferee2',
+            attributes: ['id', 'realName', 'nickname', 'avatar', 'jerseyNumber'],
+            required: false
+          },
+          {
+            model: User,
+            as: 'team1Goalkeeper',
+            attributes: ['id', 'realName', 'nickname', 'avatar', 'jerseyNumber'],
+            required: false
+          },
+          {
+            model: User,
+            as: 'team2Goalkeeper',
+            attributes: ['id', 'realName', 'nickname', 'avatar', 'jerseyNumber'],
+            required: false
+          }
+        ],
         order: [['quarterNumber', 'ASC']]
       },
       {
@@ -703,10 +735,14 @@ exports.supplementQuarterResult = async (matchId, data, userId) => {
   logger.info(`Quarter match result supplemented: ${matchId}, status: completed, mvps: ${mvpUserIds ? mvpUserIds.length : 0}`);
 
   // 更新队伍统计数据（如果是修改操作，需要传入旧结果以回滚）
+  logger.info(`[supplementQuarterResult] Starting updateTeamStats for match ${matchId}`);
   await updateTeamStats(match, result, oldResult);
+  logger.info(`[supplementQuarterResult] Completed updateTeamStats for match ${matchId}`);
 
   // 更新球员统计数据
+  logger.info(`[supplementQuarterResult] Starting updatePlayerStats for match ${matchId}`);
   await updatePlayerStats(matchId);
+  logger.info(`[supplementQuarterResult] Completed updatePlayerStats for match ${matchId}`);
 
   // Check achievements for all participants
   const achievementService = require('./achievement.service');
@@ -751,9 +787,14 @@ exports.supplementQuarterResult = async (matchId, data, userId) => {
 async function updateTeamStats(match, result, oldResult = null) {
   const { TeamStat, Season, MatchQuarter } = require('../models');
 
+  logger.info(`[updateTeamStats] Starting for match ${match.id}, seasonId: ${match.seasonId}`);
+
   // 获取赛季信息
   const season = await Season.findByPk(match.seasonId);
+  const seasonId = match.seasonId;
   const seasonName = season ? season.name : '未知赛季';
+
+  logger.info(`[updateTeamStats] Season found: id=${seasonId}, name="${seasonName}"`);
 
   // 获取所有节次数据以计算实际进球数
   const quarters = await MatchQuarter.findAll({
@@ -776,7 +817,7 @@ async function updateTeamStats(match, result, oldResult = null) {
     // 回滚队伍1旧统计（减去旧数据）
     await updateSingleTeamStats(
       match.team1Id,
-      seasonName,
+      seasonId,
       match.team1Id === oldResult.winnerTeamId,
       oldResult.winnerTeamId === null,
       oldResult.team1TotalGoals || 0,
@@ -787,7 +828,7 @@ async function updateTeamStats(match, result, oldResult = null) {
     // 回滚队伍2旧统计（减去旧数据）
     await updateSingleTeamStats(
       match.team2Id,
-      seasonName,
+      seasonId,
       match.team2Id === oldResult.winnerTeamId,
       oldResult.winnerTeamId === null,
       oldResult.team2TotalGoals || 0,
@@ -797,27 +838,29 @@ async function updateTeamStats(match, result, oldResult = null) {
   }
 
   // 更新队伍1统计（添加新数据）
-  await updateSingleTeamStats(match.team1Id, seasonName, match.team1Id === result.winnerTeamId, result.winnerTeamId === null, team1Goals, team2Goals, false);
+  await updateSingleTeamStats(match.team1Id, seasonId, match.team1Id === result.winnerTeamId, result.winnerTeamId === null, team1Goals, team2Goals, false);
 
   // 更新队伍2统计（添加新数据）
-  await updateSingleTeamStats(match.team2Id, seasonName, match.team2Id === result.winnerTeamId, result.winnerTeamId === null, team2Goals, team1Goals, false);
+  await updateSingleTeamStats(match.team2Id, seasonId, match.team2Id === result.winnerTeamId, result.winnerTeamId === null, team2Goals, team1Goals, false);
 }
 
 /**
  * 更新单个队伍的统计数据
  * @param {string} teamId - 队伍ID
- * @param {string} season - 赛季名称
+ * @param {string} seasonId - 赛季ID
  * @param {boolean} isWin - 是否获胜
  * @param {boolean} isDraw - 是否平局
  * @param {number} goalsFor - 进球数
  * @param {number} goalsAgainst - 失球数
  * @param {boolean} isRollback - 是否是回滚操作（减去统计）
  */
-async function updateSingleTeamStats(teamId, season, isWin, isDraw, goalsFor, goalsAgainst, isRollback = false) {
+async function updateSingleTeamStats(teamId, seasonId, isWin, isDraw, goalsFor, goalsAgainst, isRollback = false) {
   const { TeamStat } = require('../models');
 
+  logger.info(`[updateSingleTeamStats] teamId=${teamId}, seasonId=${seasonId}, isWin=${isWin}, isDraw=${isDraw}, isRollback=${isRollback}`);
+
   const [teamStat, created] = await TeamStat.findOrCreate({
-    where: { teamId, season },
+    where: { teamId, season: seasonId },
     defaults: {
       matchesPlayed: 0,
       wins: 0,
@@ -830,6 +873,8 @@ async function updateSingleTeamStats(teamId, season, isWin, isDraw, goalsFor, go
       winRate: '0.00'
     }
   });
+
+  logger.info(`[updateSingleTeamStats] findOrCreate result: created=${created}`);
 
   // 如果是回滚操作，减去统计；否则增加统计
   const delta = isRollback ? -1 : 1;
@@ -907,6 +952,78 @@ async function recalculatePlayerStats(userId) {
     )
   });
 
+  // 计算胜负数据
+  let wins = 0;
+  let draws = 0;
+  let losses = 0;
+
+  for (const participation of allParticipations) {
+    // 获取该场比赛的信息和结果
+    const participationMatch = await Match.findByPk(participation.matchId);
+
+    if (!participationMatch || participationMatch.status !== 'completed') {
+      continue; // 跳过未完成的比赛
+    }
+
+    const participationResult = await MatchResult.findOne({
+      where: { matchId: participation.matchId }
+    });
+
+    // 判断球员所在队伍的胜负
+    // 优先检查是否有点球大战或明确的胜者
+    if (participationResult && participationResult.winnerTeamId) {
+      // 有明确的胜者（可能通过点球决出）
+      if (participationResult.winnerTeamId === participation.teamId) {
+        wins++;
+      } else {
+        losses++;
+      }
+      continue;
+    }
+
+    // 没有明确胜者，通过比分判断
+    let myScore, opponentScore;
+
+    if (participation.teamId === participationMatch.team1Id) {
+      // 球员在队伍1
+      if (participationMatch.quarterSystem && participationResult) {
+        // 4节制：使用 team1FinalScore (节次比分)
+        myScore = participationResult.team1FinalScore !== null ? participationResult.team1FinalScore : participationResult.team1Score;
+        opponentScore = participationResult.team2FinalScore !== null ? participationResult.team2FinalScore : participationResult.team2Score;
+      } else {
+        // 非4节制：使用 matches 表的 finalTeam1Score
+        myScore = participationMatch.finalTeam1Score || 0;
+        opponentScore = participationMatch.finalTeam2Score || 0;
+      }
+    } else if (participation.teamId === participationMatch.team2Id) {
+      // 球员在队伍2
+      if (participationMatch.quarterSystem && participationResult) {
+        // 4节制：使用 team2FinalScore (节次比分)
+        myScore = participationResult.team2FinalScore !== null ? participationResult.team2FinalScore : participationResult.team2Score;
+        opponentScore = participationResult.team1FinalScore !== null ? participationResult.team1FinalScore : participationResult.team1Score;
+      } else {
+        // 非4节制：使用 matches 表的 finalTeam2Score
+        myScore = participationMatch.finalTeam2Score || 0;
+        opponentScore = participationMatch.finalTeam1Score || 0;
+      }
+    } else {
+      continue; // 队伍不匹配，跳过
+    }
+
+    // 统计胜负平
+    if (myScore > opponentScore) {
+      wins++;
+    } else if (myScore === opponentScore) {
+      draws++;
+    } else {
+      losses++;
+    }
+  }
+
+  // 计算胜率
+  const totalMatches = wins + draws + losses;
+  const winRate = totalMatches > 0 ? ((wins / totalMatches) * 100).toFixed(2) : '0.00';
+
   // 找到或创建球员统计记录
   const [playerStat, created] = await PlayerStat.findOrCreate({
     where: { userId },
@@ -928,6 +1045,10 @@ async function recalculatePlayerStats(userId) {
   playerStat.goals = totalGoals;
   playerStat.assists = totalAssists;
   playerStat.mvpCount = mvpCount;
+  playerStat.wins = wins;
+  playerStat.draws = draws;
+  playerStat.losses = losses;
+  playerStat.winRate = winRate;
 
   // 计算出勤率（按队伍计算）
   const user = await User.findByPk(userId, {
@@ -955,6 +1076,198 @@ async function recalculatePlayerStats(userId) {
   await playerStat.save();
 
   logger.info(`Player stats recalculated for user ${userId}: ${playerStat.matchesPlayed} matches, ${totalGoals} goals, ${totalAssists} assists, ${mvpCount} MVPs, attendance: ${playerStat.attendanceRate}%`);
+
+  // ========== 更新 PlayerTeamStat（分赛季统计） ==========
+  const { PlayerTeamStat, Team, Season } = require('../models');
+
+  // 获取该球员参与的所有队伍-赛季组合
+  const teamSeasonCombos = await sequelize.query(`
+    SELECT DISTINCT
+      mp.team_id,
+      m.season_id
+    FROM match_participants mp
+    JOIN matches m ON mp.match_id = m.id
+    WHERE mp.user_id = :userId
+      AND m.status = 'completed'
+  `, {
+    replacements: { userId },
+    type: sequelize.QueryTypes.SELECT
+  });
+
+  // 为每个队伍-赛季组合计算统计数据
+  for (const combo of teamSeasonCombos) {
+    const { team_id: teamId, season_id: seasonId } = combo;
+
+    // 获取该球员在该队伍、该赛季的所有参赛记录
+    const seasonParticipations = await MatchParticipant.findAll({
+      where: { userId, teamId },
+      include: [{
+        model: Match,
+        as: 'match',
+        where: {
+          status: 'completed',
+          seasonId: combo.season_id
+        },
+        required: true
+      }]
+    });
+
+    if (seasonParticipations.length === 0) continue;
+
+    // 统计该赛季的进球和助攻
+    let seasonGoals = 0;
+    let seasonAssists = 0;
+
+    for (const participation of seasonParticipations) {
+      const matchId = participation.matchId;
+
+      // 统计进球
+      const goals = await MatchEvent.count({
+        where: {
+          matchId,
+          userId,
+          eventType: 'goal'
+        }
+      });
+      seasonGoals += goals;
+
+      // 统计助攻
+      const assists = await MatchEvent.count({
+        where: {
+          matchId,
+          assistUserId: userId,
+          eventType: 'goal'
+        }
+      });
+      seasonAssists += assists;
+    }
+
+    // 统计MVP次数
+    const seasonMvpCount = await MatchResult.count({
+      where: sequelize.where(
+        sequelize.literal(`JSON_CONTAINS(mvp_user_ids, JSON_QUOTE('${userId}')) AND match_id IN (
+          SELECT m.id FROM matches m
+          JOIN match_participants mp ON m.id = mp.match_id
+          WHERE mp.user_id = '${userId}'
+            AND mp.team_id = '${teamId}'
+            AND m.season_id = '${combo.season_id}'
+            AND m.status = 'completed'
+        )`),
+        1
+      )
+    });
+
+    // 统计胜负数据
+    let seasonWins = 0;
+    let seasonDraws = 0;
+    let seasonLosses = 0;
+
+    for (const participation of seasonParticipations) {
+      const participationMatch = participation.match;
+      const participationResult = await MatchResult.findOne({
+        where: { matchId: participation.matchId }
+      });
+
+      // 判断胜负（使用与总统计相同的逻辑）
+      if (participationResult && participationResult.winnerTeamId) {
+        if (participationResult.winnerTeamId === teamId) {
+          seasonWins++;
+        } else {
+          seasonLosses++;
+        }
+        continue;
+      }
+
+      let myScore, opponentScore;
+      if (teamId === participationMatch.team1Id) {
+        if (participationMatch.quarterSystem && participationResult) {
+          myScore = participationResult.team1FinalScore !== null ? participationResult.team1FinalScore : participationResult.team1Score;
+          opponentScore = participationResult.team2FinalScore !== null ? participationResult.team2FinalScore : participationResult.team2Score;
+        } else {
+          myScore = participationMatch.finalTeam1Score || 0;
+          opponentScore = participationMatch.finalTeam2Score || 0;
+        }
+      } else if (teamId === participationMatch.team2Id) {
+        if (participationMatch.quarterSystem && participationResult) {
+          myScore = participationResult.team2FinalScore !== null ? participationResult.team2FinalScore : participationResult.team2Score;
+          opponentScore = participationResult.team1FinalScore !== null ? participationResult.team1FinalScore : participationResult.team1Score;
+        } else {
+          myScore = participationMatch.finalTeam2Score || 0;
+          opponentScore = participationMatch.finalTeam1Score || 0;
+        }
+      } else {
+        continue;
+      }
+
+      if (myScore > opponentScore) {
+        seasonWins++;
+      } else if (myScore === opponentScore) {
+        seasonDraws++;
+      } else {
+        seasonLosses++;
+      }
+    }
+
+    // 获取赛季名称用于 season 字段（VARCHAR）
+    const season = await Season.findByPk(seasonId);
+    if (!season) {
+      logger.warn(`Season ${seasonId} not found, skipping PlayerTeamStat update`);
+      continue;
+    }
+
+    logger.info(`Season found: id=${seasonId}, name="${season.name}"`);
+
+    const replacements = {
+      userId,
+      teamId,
+      seasonName: season.name,
+      seasonId,
+      matchesPlayed: seasonParticipations.length,
+      wins: seasonWins,
+      draws: seasonDraws,
+      losses: seasonLosses,
+      goals: seasonGoals,
+      assists: seasonAssists,
+      mvpCount: seasonMvpCount
+    };
+
+    logger.info(`SQL replacements: ${JSON.stringify(replacements)}`);
+
+    // 使用原始 SQL 的 INSERT ... ON DUPLICATE KEY UPDATE 来避免 Sequelize 字段映射问题
+    try {
+      await sequelize.query(`
+        INSERT INTO player_team_stats (
+          id, user_id, team_id, season, season_id,
+          matches_played, wins, draws, losses, goals, assists,
+          yellow_cards, red_cards, mvp_count, updated_at
+        ) VALUES (
+          UUID(), :userId, :teamId, :seasonName, :seasonId,
+          :matchesPlayed, :wins, :draws, :losses, :goals, :assists,
+          0, 0, :mvpCount, NOW()
+        )
+        ON DUPLICATE KEY UPDATE
+          season = :seasonName,
+          matches_played = :matchesPlayed,
+          wins = :wins,
+          draws = :draws,
+          losses = :losses,
+          goals = :goals,
+          assists = :assists,
+          mvp_count = :mvpCount,
+          updated_at = NOW()
+      `, {
+        replacements,
+        type: sequelize.QueryTypes.INSERT
+      });
+
+      logger.info(`PlayerTeamStat updated for user ${userId}, team ${teamId}, season ${seasonId}: ${seasonParticipations.length} matches, ${seasonGoals}G ${seasonAssists}A`);
+    } catch (error) {
+      logger.error(`Failed to update PlayerTeamStat for user ${userId}, team ${teamId}, season ${seasonId}`);
+      logger.error(`SQL Error: ${error.message}`);
+      logger.error(`Error details: ${JSON.stringify(error)}`);
+      throw error;
+    }
+  }
 }
 
 /**
@@ -963,18 +1276,27 @@ async function recalculatePlayerStats(userId) {
 async function updatePlayerStats(matchId) {
   const { MatchParticipant, User, PlayerStat } = require('../models');
 
+  logger.info(`[updatePlayerStats] Starting for match ${matchId}`);
+
   // 获取比赛信息
   const match = await Match.findByPk(matchId);
-  if (!match) return;
+  if (!match) {
+    logger.warn(`[updatePlayerStats] Match ${matchId} not found`);
+    return;
+  }
 
   // 获取到场人员
   const participants = await MatchParticipant.findAll({
     where: { matchId }
   });
 
+  logger.info(`[updatePlayerStats] Found ${participants.length} participants for match ${matchId}`);
+
   // 为每个参赛球员重新计算统计数据（包括进球、助攻、MVP、出勤率）
   for (const participant of participants) {
+    logger.info(`[updatePlayerStats] Recalculating stats for user ${participant.userId}`);
     await recalculatePlayerStats(participant.userId);
+    logger.info(`[updatePlayerStats] Completed recalculation for user ${participant.userId}`);
   }
 
   // 更新两支队伍所有球员的出勤率（包括未参赛球员）
@@ -1014,5 +1336,107 @@ async function updatePlayerStats(matchId) {
     }
   }
 }
+
+/**
+ * 设置节次角色（裁判和守门员）
+ * @param {string} matchId 比赛ID
+ * @param {number} quarterNumber 节次编号
+ * @param {Object} data 角色数据
+ */
+exports.setQuarterRoles = async (matchId, quarterNumber, data) => {
+  const { mainRefereeId, assistantReferee1Id, assistantReferee2Id, team1GoalkeeperId, team2GoalkeeperId } = data;
+
+  // 验证比赛
+  const match = await Match.findByPk(matchId);
+  if (!match) {
+    throw new Error('比赛不存在');
+  }
+  if (!match.quarterSystem) {
+    throw new Error('该比赛不是4节制');
+  }
+
+  // 验证节次
+  const quarter = await MatchQuarter.findOne({
+    where: { matchId, quarterNumber }
+  });
+  if (!quarter) {
+    throw new Error(`节次 ${quarterNumber} 不存在`);
+  }
+
+  // 验证用户存在（如果提供了ID）
+  const { User } = require('../models');
+  const userIds = [mainRefereeId, assistantReferee1Id, assistantReferee2Id, team1GoalkeeperId, team2GoalkeeperId].filter(Boolean);
+
+  if (userIds.length > 0) {
+    const users = await User.findAll({
+      where: { id: userIds },
+      attributes: ['id']
+    });
+
+    if (users.length !== userIds.length) {
+      throw new Error('部分用户不存在');
+    }
+  }
+
+  // 更新节次角色
+  await quarter.update({
+    mainRefereeId: mainRefereeId || null,
+    assistantReferee1Id: assistantReferee1Id || null,
+    assistantReferee2Id: assistantReferee2Id || null,
+    team1GoalkeeperId: team1GoalkeeperId || null,
+    team2GoalkeeperId: team2GoalkeeperId || null
+  });
+
+  logger.info(`Quarter roles updated: match=${matchId}, quarter=${quarterNumber}`);
+
+  // 重新查询并返回完整数据
+  const updatedQuarter = await MatchQuarter.findOne({
+    where: { matchId, quarterNumber },
+    include: [
+      {
+        model: User,
+        as: 'mainReferee',
+        attributes: ['id', 'realName', 'nickname', 'avatar', 'jerseyNumber'],
+        required: false
+      },
+      {
+        model: User,
+        as: 'assistantReferee1',
+        attributes: ['id', 'realName', 'nickname', 'avatar', 'jerseyNumber'],
+        required: false
+      },
+      {
+        model: User,
+        as: 'assistantReferee2',
+        attributes: ['id', 'realName', 'nickname', 'avatar', 'jerseyNumber'],
+        required: false
+      },
+      {
+        model: User,
+        as: 'team1Goalkeeper',
+        attributes: ['id', 'realName', 'nickname', 'avatar', 'jerseyNumber'],
+        required: false
+      },
+      {
+        model: User,
+        as: 'team2Goalkeeper',
+        attributes: ['id', 'realName', 'nickname', 'avatar', 'jerseyNumber'],
+        required: false
+      }
+    ]
+  });
+
+  return {
+    quarterNumber: updatedQuarter.quarterNumber,
+    mainReferee: updatedQuarter.mainReferee || null,
+    assistantReferee1: updatedQuarter.assistantReferee1 || null,
+    assistantReferee2: updatedQuarter.assistantReferee2 || null,
+    team1Goalkeeper: updatedQuarter.team1Goalkeeper || null,
+    team2Goalkeeper: updatedQuarter.team2Goalkeeper || null
+  };
+};
+
+// 导出 recalculatePlayerStats 供外部调用
+exports.recalculatePlayerStats = recalculatePlayerStats;
 
 module.exports = exports;

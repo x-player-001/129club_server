@@ -21,15 +21,11 @@ exports.getTeamList = async (params = {}) => {
 
   const where = {};
 
-  // 如果提供了 seasonId，通过 Season 表查询赛季名称
+  // 统一使用 seasonId
   if (seasonId) {
-    const { Season } = require('../models');
-    const seasonData = await Season.findByPk(seasonId);
-    if (seasonData) {
-      where.season = seasonData.name;
-    }
+    where.season = seasonId;
   } else if (season) {
-    // 如果只提供了 season 名称，直接使用
+    // 如果提供了 season（兼容旧接口），也当作 seasonId 处理
     where.season = season;
   }
 
@@ -37,6 +33,7 @@ exports.getTeamList = async (params = {}) => {
     where.status = status;
   }
 
+  const { Season } = require('../models');
   const { count, rows } = await Team.findAndCountAll({
     where,
     include: [
@@ -49,6 +46,12 @@ exports.getTeamList = async (params = {}) => {
         model: TeamStat,
         as: 'stats',
         required: false
+      },
+      {
+        model: Season,
+        as: 'seasonInfo',
+        attributes: ['id', 'name', 'startDate', 'endDate'],
+        required: false
       }
     ],
     offset,
@@ -56,7 +59,7 @@ exports.getTeamList = async (params = {}) => {
     order: [['createdAt', 'DESC']]
   });
 
-  // 获取每个队伍的成员数
+  // 获取每个队伍的成员数，并转换 season 为名称
   for (const team of rows) {
     const memberCount = await TeamMember.count({
       where: {
@@ -65,6 +68,11 @@ exports.getTeamList = async (params = {}) => {
       }
     });
     team.setDataValue('memberCount', memberCount);
+
+    // 将 season 字段从 UUID 替换为名称
+    if (team.seasonInfo) {
+      team.setDataValue('season', team.seasonInfo.name);
+    }
   }
 
   return {
@@ -81,6 +89,7 @@ exports.getTeamList = async (params = {}) => {
  * @param {string} teamId 队伍ID
  */
 exports.getTeamDetail = async (teamId) => {
+  const { Season } = require('../models');
   const team = await Team.findByPk(teamId, {
     include: [
       {
@@ -91,6 +100,12 @@ exports.getTeamDetail = async (teamId) => {
       {
         model: TeamStat,
         as: 'stats',
+        required: false
+      },
+      {
+        model: Season,
+        as: 'seasonInfo',
+        attributes: ['id', 'name', 'startDate', 'endDate'],
         required: false
       },
       {
@@ -120,6 +135,11 @@ exports.getTeamDetail = async (teamId) => {
   // 如果查询不到队伍，返回null（用户未加入队伍是正常情况）
   if (!team) {
     return null;
+  }
+
+  // 将 season 字段从 UUID 替换为名称
+  if (team.seasonInfo) {
+    team.setDataValue('season', team.seasonInfo.name);
   }
 
   // 对成员进行排序：队长排第一位，其他成员按出场次数倒序排列
@@ -184,6 +204,110 @@ exports.createTeam = async (data, userId) => {
   logger.info(`Team created: ${team.id}, name: ${team.name}`);
 
   return team;
+};
+
+/**
+ * 同时创建两个队伍
+ * @param {Object} data 两个队伍的数据
+ * @param {string} userId 创建者ID
+ */
+exports.createTwoTeams = async (data, userId) => {
+  const { season, team1Name, team1CaptainId, team1Color, team2Name, team2CaptainId, team2Color } = data;
+
+  // 验证必填字段
+  if (!season || !team1Name || !team1CaptainId || !team2Name || !team2CaptainId) {
+    throw new Error('请提供赛季、两个队伍名称和队长');
+  }
+
+  // 验证两个队长是否存在
+  const captain1 = await User.findByPk(team1CaptainId);
+  if (!captain1) {
+    throw new Error('队伍1的队长不存在');
+  }
+
+  const captain2 = await User.findByPk(team2CaptainId);
+  if (!captain2) {
+    throw new Error('队伍2的队长不存在');
+  }
+
+  // 验证两个队长不能是同一个人
+  if (team1CaptainId === team2CaptainId) {
+    throw new Error('两个队伍的队长不能是同一个人');
+  }
+
+  // 使用事务确保两个队伍同时创建成功或失败
+  const transaction = await sequelize.transaction();
+
+  try {
+    // 创建队伍1
+    const team1 = await Team.create({
+      name: team1Name,
+      captainId: team1CaptainId,
+      color: team1Color || null,
+      season,
+      status: 'active',
+      createdBy: userId
+    }, { transaction });
+
+    // 将队长1添加为队伍成员
+    await TeamMember.create({
+      teamId: team1.id,
+      userId: team1CaptainId,
+      role: 'captain',
+      isActive: true
+    }, { transaction });
+
+    // 更新队长1的当前队伍
+    await captain1.update({ currentTeamId: team1.id }, { transaction });
+
+    // 创建队伍1统计记录
+    await TeamStat.create({
+      teamId: team1.id,
+      season
+    }, { transaction });
+
+    // 创建队伍2
+    const team2 = await Team.create({
+      name: team2Name,
+      captainId: team2CaptainId,
+      color: team2Color || null,
+      season,
+      status: 'active',
+      createdBy: userId
+    }, { transaction });
+
+    // 将队长2添加为队伍成员
+    await TeamMember.create({
+      teamId: team2.id,
+      userId: team2CaptainId,
+      role: 'captain',
+      isActive: true
+    }, { transaction });
+
+    // 更新队长2的当前队伍
+    await captain2.update({ currentTeamId: team2.id }, { transaction });
+
+    // 创建队伍2统计记录
+    await TeamStat.create({
+      teamId: team2.id,
+      season
+    }, { transaction });
+
+    // 提交事务
+    await transaction.commit();
+
+    logger.info(`Two teams created: ${team1.id} (${team1.name}), ${team2.id} (${team2.name})`);
+
+    return {
+      team1: team1.toJSON(),
+      team2: team2.toJSON()
+    };
+  } catch (error) {
+    // 回滚事务
+    await transaction.rollback();
+    logger.error(`Failed to create two teams: ${error.message}`);
+    throw error;
+  }
 };
 
 /**
@@ -405,12 +529,23 @@ exports.getTeamVsRecord = async (team1Id, team2Id = null) => {
  * @param {string} userId 发起人ID
  */
 exports.startReshuffle = async (data, userId) => {
-  const { season, captain1Id, captain2Id, team1Id, team2Id } = data;
+  const { seasonId, captain1Id, captain2Id, team1Id, team2Id } = data;
 
   // 验证发起人是否是管理员
   const initiator = await User.findByPk(userId);
   if (!initiator || initiator.role !== 'super_admin') {
     throw new Error('只有超级管理员可以发起队伍重组');
+  }
+
+  if (!seasonId) {
+    throw new Error('请提供赛季ID');
+  }
+
+  // 验证赛季是否存在
+  const { Season } = require('../models');
+  const season = await Season.findByPk(seasonId);
+  if (!season) {
+    throw new Error('赛季不存在');
   }
 
   // 验证两个队长
@@ -440,7 +575,7 @@ exports.startReshuffle = async (data, userId) => {
 
   // 创建重组记录
   const reshuffle = await TeamReshuffle.create({
-    season,
+    season: seasonId,
     initiatorId: userId,
     captain1Id,
     captain2Id,
@@ -450,7 +585,7 @@ exports.startReshuffle = async (data, userId) => {
     startedAt: new Date()
   });
 
-  logger.info(`Reshuffle started: ${reshuffle.id}, season: ${season}`);
+  logger.info(`Reshuffle started: ${reshuffle.id}, season: ${seasonId}`);
 
   return reshuffle;
 };

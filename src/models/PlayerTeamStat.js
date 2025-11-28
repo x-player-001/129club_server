@@ -21,9 +21,10 @@ const PlayerTeamStat = sequelize.define('PlayerTeamStat', {
     comment: '队伍ID'
   },
   season: {
-    type: DataTypes.STRING(20),
+    type: DataTypes.UUID,
     allowNull: false,
-    comment: '赛季'
+    field: 'season_id',
+    comment: '赛季ID'
   },
   matchesPlayed: {
     type: DataTypes.INTEGER,

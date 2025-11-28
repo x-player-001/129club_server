@@ -14,10 +14,15 @@ const sequelize = new Sequelize(
     timezone: config.database.timezone,
     pool: config.database.pool,
     logging: config.database.logging,
+    dialectOptions: {
+      charset: 'utf8mb4'
+    },
     define: {
       timestamps: true,
       underscored: true,
-      freezeTableName: true
+      freezeTableName: true,
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci'
     }
   }
 );

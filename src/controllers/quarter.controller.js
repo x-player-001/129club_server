@@ -274,3 +274,15 @@ exports.supplementQuarterResult = async (ctx) => {
     error(ctx, err.message);
   }
 };
+
+// 设置节次角色（裁判和守门员）
+exports.setQuarterRoles = async (ctx) => {
+  try {
+    const { matchId, quarterNumber } = ctx.params;
+    const data = ctx.request.body;
+    const result = await quarterService.setQuarterRoles(matchId, parseInt(quarterNumber), data);
+    success(ctx, result, '角色设置成功');
+  } catch (err) {
+    error(ctx, err.message);
+  }
+};

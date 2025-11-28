@@ -41,8 +41,8 @@ exports.getRanking = async (ctx) => {
 exports.getOverview = async (ctx) => {
   try {
     const userId = ctx.state.user.id; // 从认证中间件获取当前用户ID
-    const { filterType = 'season' } = ctx.query; // 获取筛选类型，默认为season
-    const result = await statsService.getOverview(userId, filterType);
+    const { filterType = 'season', seasonId } = ctx.query; // 获取筛选类型和赛季ID
+    const result = await statsService.getOverview(userId, filterType, seasonId);
     success(ctx, result);
   } catch (err) {
     error(ctx, err.message);

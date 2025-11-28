@@ -404,12 +404,24 @@ exports.completeSeason = async (seasonId) => {
     throw new Error(`该赛季还有 ${incompleteMatches.length} 场未完成的比赛，请先完成所有比赛。未完成比赛：${matchTitles}`);
   }
 
+  // 更新赛季状态
   await season.update({
     status: 'completed',
     completedAt: new Date()
   });
 
-  logger.info(`Season completed: ${seasonId}`);
+  // 将该赛季的所有队伍状态更新为 archived
+  const updatedTeams = await Team.update(
+    { status: 'archived' },
+    {
+      where: {
+        season: season.name,
+        status: 'active'
+      }
+    }
+  );
+
+  logger.info(`Season completed: ${seasonId}, archived ${updatedTeams[0]} teams`);
 
   return season;
 };

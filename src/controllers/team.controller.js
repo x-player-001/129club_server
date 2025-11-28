@@ -42,6 +42,20 @@ exports.createTeam = async (ctx) => {
 };
 
 /**
+ * 同时创建两个队伍
+ */
+exports.createTwoTeams = async (ctx) => {
+  try {
+    const data = ctx.request.body;
+    const userId = ctx.state.user.id;
+    const result = await teamService.createTwoTeams(data, userId);
+    success(ctx, result, '两个队伍创建成功');
+  } catch (err) {
+    error(ctx, err.message);
+  }
+};
+
+/**
  * 更新队伍信息
  */
 exports.updateTeam = async (ctx) => {

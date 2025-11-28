@@ -187,3 +187,20 @@ exports.setMatchParticipants = async (ctx) => {
     error(ctx, err.message);
   }
 };
+
+// 获取比赛可选球员列表（用于录入比赛事件）
+exports.getSelectablePlayers = async (ctx) => {
+  try {
+    const { matchId } = ctx.params;
+    const { teamId } = ctx.query;
+
+    if (!teamId) {
+      return error(ctx, '缺少队伍ID参数', 400);
+    }
+
+    const result = await matchService.getSelectablePlayers(matchId, teamId);
+    success(ctx, result);
+  } catch (err) {
+    error(ctx, err.message);
+  }
+};

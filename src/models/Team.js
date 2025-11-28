@@ -30,9 +30,10 @@ const Team = sequelize.define('Team', {
     comment: '队伍主色调'
   },
   season: {
-    type: DataTypes.STRING(20),
+    type: DataTypes.UUID,
     allowNull: false,
-    comment: '赛季/期数 如2025-S1'
+    field: 'season_id',
+    comment: '赛季ID'
   },
   status: {
     type: DataTypes.ENUM('active', 'disbanded', 'archived'),

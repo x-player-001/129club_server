@@ -442,3 +442,114 @@ exports.getMemberDetail = async (userId) => {
 
   return user;
 };
+
+
+/**
+ * 获取号码墙数据（0-99号码使用情况）
+ * 只返回 memberType 为 'regular' 的常规成员号码
+ * @returns {Object} 号码使用情况
+ */
+exports.getJerseyNumbers = async () => {
+  // 获取所有常规成员（regular）有号码的用户（包括所有范围的号码）
+  const users = await User.findAll({
+    where: {
+      jerseyNumber: {
+        [Op.not]: null
+      },
+      memberType: 'regular' // 只返回常规成员
+    },
+    attributes: ['id', 'realName', 'nickname', 'avatar', 'jerseyNumber', 'currentTeamId', 'playerStatus'],
+    include: [
+      {
+        model: Team,
+        as: 'currentTeam',
+        attributes: ['id', 'name', 'logo'],
+        required: false
+      }
+    ],
+    order: [['jerseyNumber', 'ASC']]
+  });
+
+  // 硬编码的荣誉球员名单（未注册的）
+  const hardcodedHonoraryPlayers = [
+    { number: 0, realName: '邹可', isRegistered: false },
+    { number: 1, realName: '龚源', isRegistered: false },
+    { number: 3, realName: '赫南', isRegistered: false },
+    { number: 6, realName: '黄儒学', isRegistered: false },
+    { number: 12, realName: '余信', isRegistered: false },
+    { number: 13, realName: '陈义帅', isRegistered: false },
+    { number: 14, realName: '徐翔', isRegistered: false },
+    { number: 17, realName: '杨文华', isRegistered: false },
+    { number: 20, realName: '徐骞', isRegistered: false },
+    { number: 23, realName: '覃文波', isRegistered: false },
+    { number: 26, realName: '柳真', isRegistered: false },
+    { number: 28, realName: '赵安雄', isRegistered: false },
+    { number: 30, realName: '何锐', isRegistered: false },
+    { number: 36, realName: '郑彤', isRegistered: false },
+    { number: 66, realName: '陈皓', isRegistered: false }
+  ];
+
+  // 已注册的荣誉球员（从数据库中查询 player_status='honorary'）
+  const registeredHonoraryPlayers = users
+    .filter(user => user.playerStatus === 'honorary')
+    .map(user => ({
+      number: user.jerseyNumber,
+      userId: user.id,
+      realName: user.realName,
+      nickname: user.nickname,
+      avatar: user.avatar,
+      teamId: user.currentTeamId,
+      teamName: user.currentTeam?.name || null,
+      teamLogo: user.currentTeam?.logo || null,
+      isRegistered: true
+    }));
+
+  // 已注册荣誉球员的号码集合（用于去重）
+  const registeredHonoraryNumberSet = new Set(registeredHonoraryPlayers.map(p => p.number));
+
+  // 过滤硬编码列表：去除已在数据库中注册的号码（去重）
+  const unregisteredHonoraryPlayers = hardcodedHonoraryPlayers
+    .filter(player => !registeredHonoraryNumberSet.has(player.number));
+
+  // 合并荣誉球员列表（数据库已注册 + 硬编码未注册），按号码排序
+  const honoraryPlayers = [...registeredHonoraryPlayers, ...unregisteredHonoraryPlayers]
+    .sort((a, b) => a.number - b.number);
+
+  // 荣誉球员号码集合（用于从 usedNumbers 中排除）
+  const honoraryNumberSet = new Set(honoraryPlayers.map(p => p.number));
+
+  // 构建已使用号码列表（所有号码，排除荣誉球员）
+  const usedNumbers = users
+    .filter(user => user.playerStatus !== 'honorary')
+    .map(user => ({
+      number: user.jerseyNumber,
+      userId: user.id,
+      realName: user.realName,
+      nickname: user.nickname,
+      avatar: user.avatar,
+      teamId: user.currentTeamId,
+      teamName: user.currentTeam?.name || null,
+      teamLogo: user.currentTeam?.logo || null,
+      playerStatus: user.playerStatus
+    }));
+
+  // 提取所有已使用的号码（包括荣誉球员和常规成员，用于计算可用号码）
+  const allUsedNumberSet = new Set([...users.map(u => u.jerseyNumber), ...honoraryNumberSet]);
+
+  // 计算 0-99 范围内的可用号码
+  const availableNumbers = [];
+  for (let i = 0; i <= 99; i++) {
+    if (!allUsedNumberSet.has(i)) {
+      availableNumbers.push(i);
+    }
+  }
+
+  logger.info(`Jersey numbers fetched: ${usedNumbers.length} used, ${availableNumbers.length} available (0-99), ${honoraryPlayers.length} honorary`);
+
+  return {
+    usedNumbers,      // 所有已使用的号码（0-999）
+    availableNumbers, // 0-99 范围内可用的号码
+    honoraryPlayers,  // 荣誉球员（已注册 + 未注册）
+    range: { min: 0, max: 999 } // 总号码范围
+  };
+};

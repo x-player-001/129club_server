@@ -12,6 +12,9 @@ router.get('/:teamId', optionalAuthMiddleware, teamController.getTeamDetail);
 // 创建队伍（管理员）
 router.post('/', authMiddleware, checkRole(['super_admin']), teamController.createTeam);
 
+// 同时创建两个队伍（管理员）
+router.post('/batch/create-two', authMiddleware, checkRole(['super_admin']), teamController.createTwoTeams);
+
 // 更新队伍信息（队长或管理员）
 router.put('/:teamId', authMiddleware, teamController.updateTeam);
 

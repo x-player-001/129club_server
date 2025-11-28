@@ -104,6 +104,12 @@ const User = sequelize.define('User', {
     field: 'member_type',
     comment: '队员类型（regular=正式队员, temporary=临时队员）'
   },
+  playerStatus: {
+    type: DataTypes.ENUM('active', 'virtual', 'honorary', 'retired'),
+    defaultValue: 'active',
+    field: 'player_status',
+    comment: '球员状态（active=活跃, virtual=虚拟球员, honorary=荣誉球员, retired=退役）'
+  },
   status: {
     type: DataTypes.ENUM('active', 'inactive', 'leave'),
     defaultValue: 'active',

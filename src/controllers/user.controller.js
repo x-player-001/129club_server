@@ -71,3 +71,14 @@ exports.getMemberDetail = async (ctx) => {
     error(ctx, err.message);
   }
 };
+/**
+ * 获取号码墙数据
+ */
+exports.getJerseyNumbers = async (ctx) => {
+  try {
+    const result = await userService.getJerseyNumbers();
+    success(ctx, result);
+  } catch (err) {
+    error(ctx, err.message);
+  }
+};

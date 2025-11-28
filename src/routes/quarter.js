@@ -25,4 +25,7 @@ router.post('/match/parse-report', authMiddleware, quarterController.parseReport
 // 查询解析任务状态
 router.get('/match/parse-report/:taskId', authMiddleware, quarterController.getParseTask);
 
+// 设置节次角色（裁判和守门员）
+router.put('/match/:matchId/quarter/:quarterNumber/roles', authMiddleware, quarterController.setQuarterRoles);
+
 module.exports = router;
