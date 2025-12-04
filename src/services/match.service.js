@@ -196,13 +196,7 @@ exports.createMatch = async (data, userId) => {
       throw new Error(`赛季状态为${season.status}，无法添加比赛`);
     }
 
-    // 检查赛季比赛数是否达到上限（可选验证）
-    if (season.maxMatches) {
-      const matchCount = await Match.count({ where: { seasonId } });
-      if (matchCount >= season.maxMatches) {
-        throw new Error(`赛季比赛数已达上限（${season.maxMatches}场）`);
-      }
-    }
+    // 移除赛季比赛数量限制，不再检查 maxMatches
   }
 
   // 创建比赛
