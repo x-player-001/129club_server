@@ -228,7 +228,7 @@ exports.createTeam = async (data, userId) => {
 exports.createTwoTeams = async (data, userId) => {
   const { season, seasonId, team1Name, team1CaptainId, team1Color, team2Name, team2CaptainId, team2Color } = data;
 
-  logger.info('[createTwoTeams] Input params:', { season, seasonId, team1Name, team2Name });
+  logger.info(`[createTwoTeams] Input params: season=${season}, seasonId=${seasonId}, team1Name=${team1Name}, team2Name=${team2Name}`);
 
   // 验证必填字段
   if ((!season && !seasonId) || !team1Name || !team1CaptainId || !team2Name || !team2CaptainId) {
@@ -246,7 +246,7 @@ exports.createTwoTeams = async (data, userId) => {
     finalSeasonId = seasonRecord.id;
   }
 
-  logger.info('[createTwoTeams] Using finalSeasonId:', finalSeasonId);
+  logger.info(`[createTwoTeams] Using finalSeasonId: ${finalSeasonId}`);
 
   // 验证两个队长是否存在
   const captain1 = await User.findByPk(team1CaptainId);
