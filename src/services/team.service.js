@@ -20,6 +20,7 @@ exports.getTeamList = async (params = {}) => {
   const limit = parseInt(pageSize);
 
   const where = {};
+  const { Season } = require('../models');
 
   // 统一使用 seasonId
   if (seasonId) {
@@ -27,13 +28,20 @@ exports.getTeamList = async (params = {}) => {
   } else if (season) {
     // 如果提供了 season（兼容旧接口），也当作 seasonId 处理
     where.season = season;
+  } else {
+    // 如果没有指定赛季，默认查询当前活跃赛季的队伍
+    const activeSeason = await Season.findOne({
+      where: { status: 'active' },
+      order: [['createdAt', 'DESC']]
+    });
+    if (activeSeason) {
+      where.season = activeSeason.id;
+    }
   }
 
   if (status) {
     where.status = status;
   }
-
-  const { Season } = require('../models');
   const { count, rows } = await Team.findAndCountAll({
     where,
     include: [
