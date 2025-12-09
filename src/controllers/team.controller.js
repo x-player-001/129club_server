@@ -48,9 +48,11 @@ exports.createTwoTeams = async (ctx) => {
   try {
     const data = ctx.request.body;
     const userId = ctx.state.user.id;
+    logger.info('[Controller createTwoTeams] Request body:', data);
     const result = await teamService.createTwoTeams(data, userId);
     success(ctx, result, '两个队伍创建成功');
   } catch (err) {
+    logger.error('Failed to create two teams:', err.message);
     error(ctx, err.message);
   }
 };
