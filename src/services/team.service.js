@@ -97,7 +97,7 @@ exports.getTeamList = async (params = {}) => {
  * @param {string} teamId 队伍ID
  */
 exports.getTeamDetail = async (teamId) => {
-  const { Season } = require('../models');
+  const { Season, PlayerTeamStat } = require('../models');
   const team = await Team.findByPk(teamId, {
     include: [
       {
@@ -125,15 +125,7 @@ exports.getTeamDetail = async (teamId) => {
           {
             model: User,
             as: 'user',
-            attributes: ['id', 'nickname', 'realName', 'avatar', 'jerseyNumber', 'position', 'leftFootSkill', 'rightFootSkill', 'memberType'],
-            include: [
-              {
-                model: PlayerStat,
-                as: 'stats',
-                attributes: ['matchesPlayed', 'goals', 'assists', 'winRate'],
-                required: false
-              }
-            ]
+            attributes: ['id', 'nickname', 'realName', 'avatar', 'jerseyNumber', 'position', 'leftFootSkill', 'rightFootSkill', 'memberType']
           }
         ]
       }
@@ -154,6 +146,47 @@ exports.getTeamDetail = async (teamId) => {
   if (team.stats && team.seasonInfo) {
     team.stats.setDataValue('seasonId', team.stats.season); // 保存原 UUID 到 seasonId
     team.stats.setDataValue('season', team.seasonInfo.name); // season 改为名称
+  }
+
+  // 为每个成员查询当前队伍赛季的统计数据
+  if (team.members && team.members.length > 0 && team.season) {
+    for (const member of team.members) {
+      if (member.user) {
+        // 查询该球员在当前队伍赛季的统计数据
+        const playerTeamStat = await PlayerTeamStat.findOne({
+          where: {
+            userId: member.user.id,
+            teamId: team.id,
+            season: team.season  // 使用队伍的 season_id
+          },
+          attributes: ['matchesPlayed', 'goals', 'assists', 'wins', 'draws', 'losses']
+        });
+
+        // 将统计数据设置到 user.stats
+        if (playerTeamStat) {
+          // 计算胜率
+          const totalMatches = playerTeamStat.matchesPlayed || 0;
+          const winRate = totalMatches > 0
+            ? parseFloat(((playerTeamStat.wins / totalMatches) * 100).toFixed(2))
+            : 0;
+
+          member.user.setDataValue('stats', {
+            matchesPlayed: playerTeamStat.matchesPlayed || 0,
+            goals: playerTeamStat.goals || 0,
+            assists: playerTeamStat.assists || 0,
+            winRate
+          });
+        } else {
+          // 没有统计数据，设置默认值
+          member.user.setDataValue('stats', {
+            matchesPlayed: 0,
+            goals: 0,
+            assists: 0,
+            winRate: 0
+          });
+        }
+      }
+    }
   }
 
   // 对成员进行排序：队长排第一位，其他成员按出场次数倒序排列
