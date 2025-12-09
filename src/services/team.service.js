@@ -226,11 +226,22 @@ exports.createTeam = async (data, userId) => {
  * @param {string} userId 创建者ID
  */
 exports.createTwoTeams = async (data, userId) => {
-  const { season, team1Name, team1CaptainId, team1Color, team2Name, team2CaptainId, team2Color } = data;
+  const { season, seasonId, team1Name, team1CaptainId, team1Color, team2Name, team2CaptainId, team2Color } = data;
 
   // 验证必填字段
-  if (!season || !team1Name || !team1CaptainId || !team2Name || !team2CaptainId) {
+  if ((!season && !seasonId) || !team1Name || !team1CaptainId || !team2Name || !team2CaptainId) {
     throw new Error('请提供赛季、两个队伍名称和队长');
+  }
+
+  // 统一使用 seasonId：如果传了 seasonId 直接用，否则通过 season 名称查找
+  let finalSeasonId = seasonId;
+  if (!finalSeasonId && season) {
+    const { Season } = require('../models');
+    const seasonRecord = await Season.findOne({ where: { name: season } });
+    if (!seasonRecord) {
+      throw new Error(`赛季"${season}"不存在`);
+    }
+    finalSeasonId = seasonRecord.id;
   }
 
   // 验证两个队长是否存在
@@ -258,7 +269,7 @@ exports.createTwoTeams = async (data, userId) => {
       name: team1Name,
       captainId: team1CaptainId,
       color: team1Color || null,
-      season,
+      season: finalSeasonId,
       status: 'active',
       createdBy: userId
     }, { transaction });
@@ -277,7 +288,7 @@ exports.createTwoTeams = async (data, userId) => {
     // 创建队伍1统计记录
     await TeamStat.create({
       teamId: team1.id,
-      season
+      season: finalSeasonId
     }, { transaction });
 
     // 创建队伍2
@@ -285,7 +296,7 @@ exports.createTwoTeams = async (data, userId) => {
       name: team2Name,
       captainId: team2CaptainId,
       color: team2Color || null,
-      season,
+      season: finalSeasonId,
       status: 'active',
       createdBy: userId
     }, { transaction });
@@ -304,7 +315,7 @@ exports.createTwoTeams = async (data, userId) => {
     // 创建队伍2统计记录
     await TeamStat.create({
       teamId: team2.id,
-      season
+      season: finalSeasonId
     }, { transaction });
 
     // 提交事务
