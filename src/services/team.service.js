@@ -137,6 +137,9 @@ exports.getTeamDetail = async (teamId) => {
     return null;
   }
 
+  // 保存原始的 seasonId (UUID) 用于查询统计数据
+  const seasonId = team.season;
+
   // 将 season 字段从 UUID 替换为名称
   if (team.seasonInfo) {
     team.setDataValue('season', team.seasonInfo.name);
@@ -149,7 +152,7 @@ exports.getTeamDetail = async (teamId) => {
   }
 
   // 为每个成员查询当前队伍赛季的统计数据
-  if (team.members && team.members.length > 0 && team.season) {
+  if (team.members && team.members.length > 0 && seasonId) {
     for (const member of team.members) {
       if (member.user) {
         // 查询该球员在当前队伍赛季的统计数据
@@ -157,7 +160,7 @@ exports.getTeamDetail = async (teamId) => {
           where: {
             userId: member.user.id,
             teamId: team.id,
-            season: team.season  // 使用队伍的 season_id
+            season: seasonId  // 使用保存的原始 seasonId (UUID)
           },
           attributes: ['matchesPlayed', 'goals', 'assists', 'wins', 'draws', 'losses']
         });
