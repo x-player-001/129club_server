@@ -29,6 +29,12 @@ const Team = sequelize.define('Team', {
     allowNull: true,
     comment: '队伍主色调'
   },
+  jerseyImage: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    field: 'jersey_image',
+    comment: '球衣图片URL'
+  },
   season: {
     type: DataTypes.UUID,
     allowNull: false,

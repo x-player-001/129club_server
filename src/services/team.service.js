@@ -262,7 +262,7 @@ exports.createTeam = async (data, userId) => {
  * @param {string} userId 创建者ID
  */
 exports.createTwoTeams = async (data, userId) => {
-  const { season, seasonId, team1Name, team1CaptainId, team1Color, team2Name, team2CaptainId, team2Color } = data;
+  const { season, seasonId, team1Name, team1CaptainId, team1Color, team1JerseyImage, team2Name, team2CaptainId, team2Color, team2JerseyImage } = data;
 
   logger.info(`[createTwoTeams] Input params: season=${season}, seasonId=${seasonId}, team1Name=${team1Name}, team2Name=${team2Name}`);
 
@@ -309,6 +309,7 @@ exports.createTwoTeams = async (data, userId) => {
       name: team1Name,
       captainId: team1CaptainId,
       color: team1Color || null,
+      jerseyImage: team1JerseyImage || null,
       season: finalSeasonId,
       status: 'active',
       createdBy: userId
@@ -336,6 +337,7 @@ exports.createTwoTeams = async (data, userId) => {
       name: team2Name,
       captainId: team2CaptainId,
       color: team2Color || null,
+      jerseyImage: team2JerseyImage || null,
       season: finalSeasonId,
       status: 'active',
       createdBy: userId
@@ -395,7 +397,7 @@ exports.updateTeam = async (teamId, data, userId) => {
   }
 
   // 只允许更新特定字段
-  const allowedFields = ['name', 'logo', 'color', 'captainId'];
+  const allowedFields = ['name', 'logo', 'color', 'jerseyImage', 'captainId'];
   const updateData = {};
 
   allowedFields.forEach(field => {
