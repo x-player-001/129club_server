@@ -57,12 +57,12 @@ exports.getMatchList = async (params = {}) => {
       {
         model: Team,
         as: 'team1',
-        attributes: ['id', 'name', 'logo', 'color']
+        attributes: ['id', 'name', 'logo', 'color', 'jerseyImage']
       },
       {
         model: Team,
         as: 'team2',
-        attributes: ['id', 'name', 'logo', 'color']
+        attributes: ['id', 'name', 'logo', 'color', 'jerseyImage']
       },
       {
         model: MatchResult,
@@ -135,12 +135,12 @@ exports.getMatchDetail = async (matchId) => {
       {
         model: Team,
         as: 'team1',
-        attributes: ['id', 'name', 'logo', 'color']
+        attributes: ['id', 'name', 'logo', 'color', 'jerseyImage']
       },
       {
         model: Team,
         as: 'team2',
-        attributes: ['id', 'name', 'logo', 'color']
+        attributes: ['id', 'name', 'logo', 'color', 'jerseyImage']
       },
       {
         model: User,
@@ -497,7 +497,7 @@ exports.getRegistrationList = async (matchId) => {
       {
         model: Team,
         as: 'team',
-        attributes: ['id', 'name', 'logo', 'color']
+        attributes: ['id', 'name', 'logo', 'color', 'jerseyImage']
       }
     ],
     order: [['registeredAt', 'ASC']]
@@ -761,7 +761,7 @@ exports.getMatchParticipants = async (matchId) => {
       {
         model: Team,
         as: 'team',
-        attributes: ['id', 'name', 'logo', 'color']
+        attributes: ['id', 'name', 'logo', 'color', 'jerseyImage']
       }
     ],
     order: [['teamId', 'ASC'], ['createdAt', 'ASC']]

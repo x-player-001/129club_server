@@ -35,12 +35,12 @@ exports.getOverview = async (userId, filterType = 'season', seasonId = null) => 
         {
           model: Team,
           as: 'team1',
-          attributes: ['id', 'name', 'logo']
+          attributes: ['id', 'name', 'logo', 'jerseyImage']
         },
         {
           model: Team,
           as: 'team2',
-          attributes: ['id', 'name', 'logo']
+          attributes: ['id', 'name', 'logo', 'jerseyImage']
         }
       ],
       order: [['matchDate', 'DESC']]
@@ -409,7 +409,7 @@ async function calculateTeamStats(matches, userId) {
       include: [{
         model: Team,
         as: 'currentTeam',
-        attributes: ['id', 'name', 'logo']
+        attributes: ['id', 'name', 'logo', 'jerseyImage']
       }]
     });
     if (user && user.currentTeam) {
@@ -519,7 +519,7 @@ exports.getPlayerStats = async (userId, params = {}) => {
       include: [{
         model: Team,
         as: 'currentTeam',
-        attributes: ['id', 'name', 'color', 'logo']
+        attributes: ['id', 'name', 'color', 'logo', 'jerseyImage']
       }]
     });
 
@@ -919,7 +919,7 @@ exports.getRanking = async (type, params = {}) => {
           {
             model: Team,
             as: 'currentTeam',
-            attributes: ['id', 'name', 'color', 'logo'],
+            attributes: ['id', 'name', 'color', 'logo', 'jerseyImage'],
             required: false
           }
         ]

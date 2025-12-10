@@ -156,12 +156,12 @@ exports.getSeasonList = async (params) => {
           {
             model: Team,
             as: 'team1',
-            attributes: ['id', 'name', 'logo']
+            attributes: ['id', 'name', 'logo', 'jerseyImage']
           },
           {
             model: Team,
             as: 'team2',
-            attributes: ['id', 'name', 'logo']
+            attributes: ['id', 'name', 'logo', 'jerseyImage']
           },
           {
             model: MatchResult,
@@ -208,12 +208,12 @@ exports.getSeasonDetail = async (seasonId) => {
       {
         model: Team,
         as: 'team1',
-        attributes: ['id', 'name', 'logo']
+        attributes: ['id', 'name', 'logo', 'jerseyImage']
       },
       {
         model: Team,
         as: 'team2',
-        attributes: ['id', 'name', 'logo']
+        attributes: ['id', 'name', 'logo', 'jerseyImage']
       },
       {
         model: MatchResult,
@@ -331,12 +331,12 @@ exports.getSeasonStatistics = async (seasonId) => {
       {
         model: Team,
         as: 'team1',
-        attributes: ['id', 'name', 'logo']
+        attributes: ['id', 'name', 'logo', 'jerseyImage']
       },
       {
         model: Team,
         as: 'team2',
-        attributes: ['id', 'name', 'logo']
+        attributes: ['id', 'name', 'logo', 'jerseyImage']
       }
     ]
   });

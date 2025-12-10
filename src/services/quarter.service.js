@@ -431,12 +431,12 @@ exports.getMatchWithQuarters = async (matchId) => {
       {
         model: Team,
         as: 'team1',
-        attributes: ['id', 'name', 'logo', 'color']
+        attributes: ['id', 'name', 'logo', 'color', 'jerseyImage']
       },
       {
         model: Team,
         as: 'team2',
-        attributes: ['id', 'name', 'logo', 'color']
+        attributes: ['id', 'name', 'logo', 'color', 'jerseyImage']
       },
       {
         model: MatchQuarter,

@@ -229,7 +229,7 @@ exports.getUserInfo = async (userId) => {
       {
         model: Team,
         as: 'currentTeam',
-        attributes: ['id', 'name', 'logo', 'color', 'captainId'],
+        attributes: ['id', 'name', 'logo', 'color', 'jerseyImage', 'captainId'],
         foreignKey: 'currentTeamId',
         required: false,
         include: [
@@ -375,7 +375,7 @@ exports.getMemberList = async (params = {}) => {
       {
         model: Team,
         as: 'currentTeam',
-        attributes: ['id', 'name', 'logo'],
+        attributes: ['id', 'name', 'logo', 'jerseyImage'],
         foreignKey: 'currentTeamId',
         required: false
       },
@@ -411,7 +411,7 @@ exports.getMemberDetail = async (userId) => {
       {
         model: Team,
         as: 'currentTeam',
-        attributes: ['id', 'name', 'logo', 'color'],
+        attributes: ['id', 'name', 'logo', 'color', 'jerseyImage'],
         foreignKey: 'currentTeamId',
         required: false
       },
@@ -463,7 +463,7 @@ exports.getJerseyNumbers = async () => {
       {
         model: Team,
         as: 'currentTeam',
-        attributes: ['id', 'name', 'logo'],
+        attributes: ['id', 'name', 'logo', 'jerseyImage'],
         required: false
       }
     ],

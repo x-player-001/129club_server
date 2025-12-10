@@ -534,12 +534,12 @@ exports.getTeamVsRecord = async (team1Id, team2Id = null) => {
       {
         model: Team,
         as: 'team1',
-        attributes: ['id', 'name', 'logo', 'color']
+        attributes: ['id', 'name', 'logo', 'color', 'jerseyImage']
       },
       {
         model: Team,
         as: 'team2',
-        attributes: ['id', 'name', 'logo', 'color']
+        attributes: ['id', 'name', 'logo', 'color', 'jerseyImage']
       },
       {
         model: MatchResult,
@@ -846,8 +846,8 @@ exports.getReshuffleStatus = async (reshuffleId) => {
     include: [
       { model: User, as: 'captain1', attributes: ['id', 'nickname', 'avatar'] },
       { model: User, as: 'captain2', attributes: ['id', 'nickname', 'avatar'] },
-      { model: Team, as: 'team1', attributes: ['id', 'name', 'color', 'logo'] },
-      { model: Team, as: 'team2', attributes: ['id', 'name', 'color', 'logo'] },
+      { model: Team, as: 'team1', attributes: ['id', 'name', 'color', 'logo', 'jerseyImage'] },
+      { model: Team, as: 'team2', attributes: ['id', 'name', 'color', 'logo', 'jerseyImage'] },
       {
         model: DraftPick,
         as: 'picks',
@@ -944,7 +944,7 @@ exports.getPlayerDraftHistory = async (userId) => {
         where: { status: 'completed' }
       },
       { model: User, as: 'captain', attributes: ['id', 'nickname', 'avatar'] },
-      { model: Team, as: 'team', attributes: ['id', 'name', 'color', 'logo'] }
+      { model: Team, as: 'team', attributes: ['id', 'name', 'color', 'logo', 'jerseyImage'] }
     ],
     order: [['pickedAt', 'DESC']]
   });
@@ -971,8 +971,8 @@ exports.getReshuffleHistory = async (params = {}) => {
     include: [
       { model: User, as: 'captain1', attributes: ['id', 'nickname', 'avatar'] },
       { model: User, as: 'captain2', attributes: ['id', 'nickname', 'avatar'] },
-      { model: Team, as: 'team1', attributes: ['id', 'name', 'color', 'logo'] },
-      { model: Team, as: 'team2', attributes: ['id', 'name', 'color', 'logo'] },
+      { model: Team, as: 'team1', attributes: ['id', 'name', 'color', 'logo', 'jerseyImage'] },
+      { model: Team, as: 'team2', attributes: ['id', 'name', 'color', 'logo', 'jerseyImage'] },
       { model: DraftPick, as: 'picks', attributes: ['id'] }
     ],
     offset,
