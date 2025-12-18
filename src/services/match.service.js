@@ -931,10 +931,36 @@ exports.getSelectablePlayers = async (matchId, teamId) => {
     isVirtual: true
   }));
 
+  // 4. 获取未分配队伍的活跃球员
+  const unassignedPlayers = await User.findAll({
+    where: {
+      currentTeamId: null,
+      status: 'active',
+      playerStatus: {
+        [Op.ne]: 'virtual'
+      }
+    },
+    attributes: ['id', 'realName', 'nickname', 'avatar', 'jerseyNumber', 'position', 'playerStatus', 'memberType'],
+    order: [['jerseyNumber', 'ASC']]
+  });
+
+  const unassignedPlayersList = unassignedPlayers.map(user => ({
+    id: user.id,
+    realName: user.realName,
+    nickname: user.nickname,
+    avatar: user.avatar,
+    jerseyNumber: user.jerseyNumber,
+    position: user.position,
+    playerStatus: user.playerStatus,
+    memberType: user.memberType,
+    isUnassigned: true
+  }));
+
   return {
     registeredPlayers,
     unregisteredPlayers: unregisteredPlayersList,
     virtualPlayers: virtualPlayersList,
+    unassignedPlayers: unassignedPlayersList,
     categories: {
       registered: {
         label: '已报名',
@@ -947,6 +973,10 @@ exports.getSelectablePlayers = async (matchId, teamId) => {
       virtual: {
         label: '虚拟球员',
         count: virtualPlayersList.length
+      },
+      unassigned: {
+        label: '未分配队伍',
+        count: unassignedPlayersList.length
       }
     }
   };
