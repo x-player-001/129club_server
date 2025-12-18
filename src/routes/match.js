@@ -51,10 +51,4 @@ router.post('/:matchId/participants', authMiddleware, matchController.setMatchPa
 // 获取比赛可选球员列表（用于录入比赛事件）
 router.get('/:matchId/selectable-players', authMiddleware, matchController.getSelectablePlayers);
 
-// 获取比赛分享配置（支持游客）
-router.get('/:matchId/share-config', optionalAuthMiddleware, matchController.getShareConfig);
-
-// 设置比赛分享配置（管理员）
-router.put('/:matchId/share-config', authMiddleware, checkRole(['super_admin']), matchController.setShareConfig);
-
 module.exports = router;

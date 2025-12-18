@@ -8,13 +8,6 @@ const ShareConfig = sequelize.define('ShareConfig', {
     primaryKey: true,
     comment: '配置ID'
   },
-  matchId: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    field: 'match_id',
-    unique: true,
-    comment: '比赛ID'
-  },
   title: {
     type: DataTypes.STRING(100),
     allowNull: true,
@@ -30,6 +23,12 @@ const ShareConfig = sequelize.define('ShareConfig', {
     type: DataTypes.STRING(255),
     allowNull: true,
     comment: '分享描述'
+  },
+  isActive: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+    field: 'is_active',
+    comment: '是否有效'
   },
   createdAt: {
     type: DataTypes.DATE,

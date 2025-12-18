@@ -205,29 +205,3 @@ exports.getSelectablePlayers = async (ctx) => {
   }
 };
 
-/**
- * 获取比赛分享配置
- */
-exports.getShareConfig = async (ctx) => {
-  try {
-    const { matchId } = ctx.params;
-    const result = await matchService.getShareConfig(matchId);
-    success(ctx, result);
-  } catch (err) {
-    error(ctx, err.message);
-  }
-};
-
-/**
- * 设置比赛分享配置
- */
-exports.setShareConfig = async (ctx) => {
-  try {
-    const { matchId } = ctx.params;
-    const data = ctx.request.body;
-    const result = await matchService.setShareConfig(matchId, data);
-    success(ctx, result, result.created ? '配置创建成功' : '配置更新成功');
-  } catch (err) {
-    error(ctx, err.message);
-  }
-};

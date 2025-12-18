@@ -149,9 +149,7 @@ Notification.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 UserVisitLog.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 User.hasMany(UserVisitLog, { foreignKey: 'userId', as: 'visitLogs' });
 
-// ShareConfig 关联
-ShareConfig.belongsTo(Match, { foreignKey: 'matchId', as: 'match' });
-Match.hasOne(ShareConfig, { foreignKey: 'matchId', as: 'shareConfig' });
+// ShareConfig 无关联（通用配置）
 
 // ====================================
 // 导出所有模型
