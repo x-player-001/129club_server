@@ -6,8 +6,8 @@ const { authMiddleware, optionalAuthMiddleware, checkRole } = require('../middle
 // 获取当前有效的分享配置（支持游客）
 router.get('/active', optionalAuthMiddleware, shareConfigController.getActiveConfig);
 
-// 获取分享配置历史记录（管理员）
-router.get('/history', authMiddleware, checkRole(['super_admin']), shareConfigController.getConfigHistory);
+// 获取分享配置历史记录（支持游客）
+router.get('/history', optionalAuthMiddleware, shareConfigController.getConfigHistory);
 
 // 创建新的分享配置（管理员）
 router.post('/', authMiddleware, checkRole(['super_admin']), shareConfigController.createConfig);
