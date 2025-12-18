@@ -20,6 +20,7 @@ const Achievement = require('./Achievement');
 const UserAchievement = require('./UserAchievement');
 const Notification = require('./Notification');
 const UserVisitLog = require('./UserVisitLog');
+const ShareConfig = require('./ShareConfig');
 
 // ====================================
 // 定义模型关联关系
@@ -148,6 +149,10 @@ Notification.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 UserVisitLog.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 User.hasMany(UserVisitLog, { foreignKey: 'userId', as: 'visitLogs' });
 
+// ShareConfig 关联
+ShareConfig.belongsTo(Match, { foreignKey: 'matchId', as: 'match' });
+Match.hasOne(ShareConfig, { foreignKey: 'matchId', as: 'shareConfig' });
+
 // ====================================
 // 导出所有模型
 // ====================================
@@ -173,5 +178,6 @@ module.exports = {
   Achievement,
   UserAchievement,
   Notification,
-  UserVisitLog
+  UserVisitLog,
+  ShareConfig
 };

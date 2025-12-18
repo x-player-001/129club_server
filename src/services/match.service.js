@@ -981,3 +981,88 @@ exports.getSelectablePlayers = async (matchId, teamId) => {
     }
   };
 };
+
+/**
+ * 获取比赛分享配置
+ * @param {string} matchId 比赛ID
+ */
+exports.getShareConfig = async (matchId) => {
+  const { ShareConfig } = require('../models');
+
+  // 验证比赛存在
+  const match = await Match.findByPk(matchId, {
+    attributes: ['id', 'title']
+  });
+  if (!match) {
+    throw new Error('比赛不存在');
+  }
+
+  // 查询分享配置
+  const config = await ShareConfig.findOne({
+    where: { matchId }
+  });
+
+  // 如果没有配置，返回默认值
+  if (!config) {
+    return {
+      matchId,
+      title: match.title || '比赛报名',
+      imageUrl: null,
+      description: null,
+      isDefault: true
+    };
+  }
+
+  return {
+    matchId: config.matchId,
+    title: config.title,
+    imageUrl: config.imageUrl,
+    description: config.description,
+    isDefault: false
+  };
+};
+
+/**
+ * 设置/更新比赛分享配置
+ * @param {string} matchId 比赛ID
+ * @param {Object} data 配置数据
+ */
+exports.setShareConfig = async (matchId, data) => {
+  const { ShareConfig } = require('../models');
+
+  // 验证比赛存在
+  const match = await Match.findByPk(matchId);
+  if (!match) {
+    throw new Error('比赛不存在');
+  }
+
+  const { title, imageUrl, description } = data;
+
+  // 查找或创建配置
+  const [config, created] = await ShareConfig.findOrCreate({
+    where: { matchId },
+    defaults: {
+      matchId,
+      title,
+      imageUrl,
+      description
+    }
+  });
+
+  // 如果已存在，更新
+  if (!created) {
+    await config.update({
+      title: title !== undefined ? title : config.title,
+      imageUrl: imageUrl !== undefined ? imageUrl : config.imageUrl,
+      description: description !== undefined ? description : config.description
+    });
+  }
+
+  return {
+    matchId: config.matchId,
+    title: config.title,
+    imageUrl: config.imageUrl,
+    description: config.description,
+    created
+  };
+};
