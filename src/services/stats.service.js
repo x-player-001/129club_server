@@ -439,31 +439,54 @@ async function calculateTeamStats(matches, userId) {
   let losses = 0;
   let goalsFor = 0;
   let goalsAgainst = 0;
+  let participatedMatches = 0;
 
   matches.forEach(match => {
     if (match.result) {
       const team1Score = match.result.team1Score || 0;
       const team2Score = match.result.team2Score || 0;
 
-      goalsFor += team1Score;
-      goalsAgainst += team2Score;
+      // 找出用户在这场比赛中属于哪个队伍
+      const userParticipation = match.participants?.find(p => p.userId === userId);
+      if (!userParticipation) {
+        // 用户没有参与这场比赛，跳过
+        return;
+      }
 
-      if (team1Score > team2Score) {
-        wins++;
-      } else if (team1Score === team2Score) {
-        draws++;
-      } else {
-        losses++;
+      participatedMatches++;
+      const userTeamNumber = userParticipation.team; // 1 或 2
+
+      // 根据用户所在队伍计算进球数据
+      if (userTeamNumber === 1) {
+        goalsFor += team1Score;
+        goalsAgainst += team2Score;
+        if (team1Score > team2Score) {
+          wins++;
+        } else if (team1Score === team2Score) {
+          draws++;
+        } else {
+          losses++;
+        }
+      } else if (userTeamNumber === 2) {
+        goalsFor += team2Score;
+        goalsAgainst += team1Score;
+        if (team2Score > team1Score) {
+          wins++;
+        } else if (team1Score === team2Score) {
+          draws++;
+        } else {
+          losses++;
+        }
       }
     }
   });
 
-  const winRate = matches.length > 0 ? (wins / matches.length * 100) : 0;
+  const winRate = participatedMatches > 0 ? (wins / participatedMatches * 100) : 0;
 
   return {
     name: myTeam ? myTeam.name : 'Unknown',
     logo: myTeam ? myTeam.logo : null,
-    matchesPlayed: matches.length,
+    matchesPlayed: participatedMatches,
     wins,
     draws,
     losses,
