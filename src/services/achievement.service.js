@@ -107,6 +107,7 @@ async function checkAssistKing(userId, matchId, seasonId, achievement) {
 
 /**
  * Check Perfect Attendance achievement (100% attendance in season)
+ * Requires at least 10 matches in the season to qualify
  */
 async function checkPerfectAttendance(userId, seasonId, achievement) {
   if (!seasonId) return null;
@@ -119,7 +120,8 @@ async function checkPerfectAttendance(userId, seasonId, achievement) {
     }
   });
 
-  if (totalMatches === 0) return null;
+  // 需要至少10场比赛才能计算全勤奖
+  if (totalMatches < 10) return null;
 
   // Count user participated matches in season
   const userMatches = await MatchParticipant.count({
