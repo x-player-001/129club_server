@@ -386,25 +386,10 @@ async function calculateMyRanking(matches, userId, seasonFilter) {
 }
 
 async function calculateTeamStats(matches, userId) {
-  // Try to get team info from matches
+  // 优先从用户的 currentTeam 获取队伍信息
   let myTeam = null;
 
-  if (matches.length > 0) {
-    // Find first match with valid team data
-    for (const match of matches) {
-      if (match.team1 && match.team1.name) {
-        myTeam = match.team1;
-        break;
-      }
-      if (match.team2 && match.team2.name) {
-        myTeam = match.team2;
-        break;
-      }
-    }
-  }
-
-  // If no team found from matches, try to get from user's current team
-  if (!myTeam && userId) {
+  if (userId) {
     const user = await User.findByPk(userId, {
       include: [{
         model: Team,
@@ -414,6 +399,24 @@ async function calculateTeamStats(matches, userId) {
     });
     if (user && user.currentTeam) {
       myTeam = user.currentTeam;
+    }
+  }
+
+  // 如果用户没有设置当前队伍，从比赛参与记录中查找
+  if (!myTeam && matches.length > 0) {
+    for (const match of matches) {
+      // 通过 participants 找到用户所在的队伍
+      const userParticipation = match.participants?.find(p => p.userId === userId);
+      if (userParticipation) {
+        const userTeamNumber = userParticipation.team; // 1 或 2
+        if (userTeamNumber === 1 && match.team1) {
+          myTeam = match.team1;
+          break;
+        } else if (userTeamNumber === 2 && match.team2) {
+          myTeam = match.team2;
+          break;
+        }
+      }
     }
   }
 
