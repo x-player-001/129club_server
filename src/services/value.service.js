@@ -114,9 +114,12 @@ async function calculateMatchValues(matchId) {
       transaction
     });
 
-    // 3. 获取所有参赛球员
+    // 3. 获取所有到场球员（只统计到场人员，不统计报名但未到场的）
     const participants = await MatchParticipant.findAll({
-      where: { matchId },
+      where: {
+        matchId,
+        isPresent: true  // 只获取到场人员
+      },
       include: [{
         model: User,
         as: 'user',
@@ -357,21 +360,27 @@ async function calculateMatchValues(matchId) {
           });
         }
       } else {
-        // 胜利：500万奖池平分给所有到场者（无论哪队赢）
-        const winRewardPerPerson = Math.floor(VALUE_RULES.result.winPool / participantCount);
-        for (const participant of participants) {
-          valueRecords.push({
-            userId: participant.userId,
-            clubYear,
-            matchId,
-            seasonId: match.seasonId,
-            sourceType: 'result',
-            sourceDetail: `胜利奖励(${participantCount}人平分)`,
-            baseAmount: VALUE_RULES.result.winPool,
-            multiplier: 1 / participantCount,
-            finalAmount: winRewardPerPerson,
-            status: 'auto'
-          });
+        // 胜利：500万奖池平分给获胜队伍的到场者
+        const winnerTeamId = matchResult.winnerTeamId;
+        const winningParticipants = participants.filter(p => p.teamId === winnerTeamId);
+        const winnerCount = winningParticipants.length;
+
+        if (winnerCount > 0) {
+          const winRewardPerPerson = Math.floor(VALUE_RULES.result.winPool / winnerCount);
+          for (const participant of winningParticipants) {
+            valueRecords.push({
+              userId: participant.userId,
+              clubYear,
+              matchId,
+              seasonId: match.seasonId,
+              sourceType: 'result',
+              sourceDetail: `胜利奖励(${winnerCount}人平分)`,
+              baseAmount: VALUE_RULES.result.winPool,
+              multiplier: 1 / winnerCount,
+              finalAmount: winRewardPerPerson,
+              status: 'auto'
+            });
+          }
         }
       }
     }
