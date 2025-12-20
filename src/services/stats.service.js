@@ -420,10 +420,10 @@ async function calculateTeamStats(matches, userId) {
     }
   }
 
-  if (matches.length === 0) {
+  if (!myTeam) {
     return {
-      name: myTeam ? myTeam.name : 'Unknown',
-      logo: myTeam ? myTeam.logo : null,
+      name: 'Unknown',
+      logo: null,
       matchesPlayed: 0,
       wins: 0,
       draws: 0,
@@ -434,30 +434,33 @@ async function calculateTeamStats(matches, userId) {
     };
   }
 
+  // 统计用户所属队伍在所有比赛中的战绩（不管用户是否参与）
   let wins = 0;
   let draws = 0;
   let losses = 0;
   let goalsFor = 0;
   let goalsAgainst = 0;
-  let participatedMatches = 0;
+  let teamMatches = 0;
+
+  const myTeamId = myTeam.id;
 
   matches.forEach(match => {
     if (match.result) {
-      const team1Score = match.result.team1Score || 0;
-      const team2Score = match.result.team2Score || 0;
+      // 判断用户所属队伍是否参与了这场比赛
+      const isTeam1 = match.team1Id === myTeamId || match.team1?.id === myTeamId;
+      const isTeam2 = match.team2Id === myTeamId || match.team2?.id === myTeamId;
 
-      // 找出用户在这场比赛中属于哪个队伍
-      const userParticipation = match.participants?.find(p => p.userId === userId);
-      if (!userParticipation) {
-        // 用户没有参与这场比赛，跳过
+      if (!isTeam1 && !isTeam2) {
+        // 用户所属队伍没有参与这场比赛，跳过
         return;
       }
 
-      participatedMatches++;
-      const userTeamNumber = userParticipation.team; // 1 或 2
+      teamMatches++;
+      const team1Score = match.result.team1Score || 0;
+      const team2Score = match.result.team2Score || 0;
 
-      // 根据用户所在队伍计算进球数据
-      if (userTeamNumber === 1) {
+      // 根据队伍位置计算进球数据
+      if (isTeam1) {
         goalsFor += team1Score;
         goalsAgainst += team2Score;
         if (team1Score > team2Score) {
@@ -467,7 +470,7 @@ async function calculateTeamStats(matches, userId) {
         } else {
           losses++;
         }
-      } else if (userTeamNumber === 2) {
+      } else if (isTeam2) {
         goalsFor += team2Score;
         goalsAgainst += team1Score;
         if (team2Score > team1Score) {
@@ -481,12 +484,12 @@ async function calculateTeamStats(matches, userId) {
     }
   });
 
-  const winRate = participatedMatches > 0 ? (wins / participatedMatches * 100) : 0;
+  const winRate = teamMatches > 0 ? (wins / teamMatches * 100) : 0;
 
   return {
-    name: myTeam ? myTeam.name : 'Unknown',
-    logo: myTeam ? myTeam.logo : null,
-    matchesPlayed: participatedMatches,
+    name: myTeam.name,
+    logo: myTeam.logo,
+    matchesPlayed: teamMatches,
     wins,
     draws,
     losses,
