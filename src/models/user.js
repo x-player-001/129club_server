@@ -127,6 +127,12 @@ const User = sequelize.define('User', {
     field: 'join_date',
     comment: '加入日期'
   },
+  isOutsidePlayer: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    field: 'is_outside_player',
+    comment: '是否为外地球员（外地球员出勤身价+1000万/场）'
+  },
   createdAt: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,

@@ -168,7 +168,7 @@ exports.getMatchDetail = async (matchId) => {
  * @param {string} userId 创建者ID
  */
 exports.createMatch = async (data, userId) => {
-  const { title, team1Id, team2Id, matchDate, location, description, registrationDeadline, maxPlayersPerTeam, quarterSystem, seasonId } = data;
+  const { title, team1Id, team2Id, matchDate, location, description, registrationDeadline, maxPlayersPerTeam, quarterSystem, seasonId, matchType } = data;
 
   // 验证队伍是否存在
   const team1 = await Team.findByPk(team1Id);
@@ -208,6 +208,7 @@ exports.createMatch = async (data, userId) => {
     location,
     description: description || null,
     seasonId: seasonId || null,
+    matchType: matchType || 'internal', // 默认为内战
     registrationDeadline: registrationDeadline ? new Date(registrationDeadline) : null,
     maxPlayersPerTeam: maxPlayersPerTeam || 8, // 默认8人制，可选5/8/11
     quarterSystem: quarterSystem !== undefined ? quarterSystem : true, // 默认为4节制
@@ -217,7 +218,7 @@ exports.createMatch = async (data, userId) => {
     createdBy: userId
   });
 
-  logger.info(`Match created: ${match.id}, ${team1.name} vs ${team2.name} (quarterSystem: ${quarterSystem !== undefined ? quarterSystem : true}, seasonId: ${seasonId || 'none'})`);
+  logger.info(`Match created: ${match.id}, ${team1.name} vs ${team2.name} (matchType: ${matchType || 'internal'}, quarterSystem: ${quarterSystem !== undefined ? quarterSystem : true}, seasonId: ${seasonId || 'none'})`);
 
   return match;
 };
@@ -239,7 +240,7 @@ exports.updateMatch = async (matchId, data) => {
   }
 
   // 只允许更新特定字段
-  const allowedFields = ['title', 'matchDate', 'location', 'description', 'registrationDeadline', 'maxPlayersPerTeam', 'status'];
+  const allowedFields = ['title', 'matchDate', 'location', 'description', 'registrationDeadline', 'maxPlayersPerTeam', 'status', 'matchType'];
   const updateData = {};
 
   allowedFields.forEach(field => {

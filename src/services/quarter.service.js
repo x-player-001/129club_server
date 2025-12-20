@@ -744,6 +744,18 @@ exports.supplementQuarterResult = async (matchId, data, userId) => {
   await updatePlayerStats(matchId);
   logger.info(`[supplementQuarterResult] Completed updatePlayerStats for match ${matchId}`);
 
+  // 计算球员身价
+  logger.info(`[supplementQuarterResult] Starting calculateMatchValues for match ${matchId}`);
+  let valueResult = null;
+  try {
+    const valueService = require('./value.service');
+    valueResult = await valueService.calculateMatchValues(matchId);
+    logger.info(`[supplementQuarterResult] Completed calculateMatchValues for match ${matchId}: ${JSON.stringify(valueResult)}`);
+  } catch (error) {
+    logger.error(`Value calculation failed for match ${matchId}: ${error.message}`);
+    // 身价计算失败不影响主流程
+  }
+
   // Check achievements for all participants
   const achievementService = require('./achievement.service');
   const participants = await MatchParticipant.findAll({ where: { matchId } });
@@ -773,7 +785,8 @@ exports.supplementQuarterResult = async (matchId, data, userId) => {
       team1TotalGoals,
       team2TotalGoals
     },
-    newAchievements: newAchievementsMap
+    newAchievements: newAchievementsMap,
+    valueResult
   };
 };
 

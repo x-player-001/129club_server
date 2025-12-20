@@ -21,6 +21,9 @@ const UserAchievement = require('./UserAchievement');
 const Notification = require('./Notification');
 const UserVisitLog = require('./UserVisitLog');
 const ShareConfig = require('./ShareConfig');
+const ClubYear = require('./ClubYear');
+const PlayerValue = require('./PlayerValue');
+const PlayerYearlyValue = require('./PlayerYearlyValue');
 
 // ====================================
 // 定义模型关联关系
@@ -151,6 +154,17 @@ User.hasMany(UserVisitLog, { foreignKey: 'userId', as: 'visitLogs' });
 
 // ShareConfig 无关联（通用配置）
 
+// PlayerValue 关联
+PlayerValue.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+PlayerValue.belongsTo(Match, { foreignKey: 'matchId', as: 'match' });
+PlayerValue.belongsTo(Season, { foreignKey: 'seasonId', as: 'season' });
+PlayerValue.belongsTo(User, { foreignKey: 'approvedBy', as: 'approver' });
+User.hasMany(PlayerValue, { foreignKey: 'userId', as: 'values' });
+
+// PlayerYearlyValue 关联
+PlayerYearlyValue.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+User.hasMany(PlayerYearlyValue, { foreignKey: 'userId', as: 'yearlyValues' });
+
 // ====================================
 // 导出所有模型
 // ====================================
@@ -177,5 +191,8 @@ module.exports = {
   UserAchievement,
   Notification,
   UserVisitLog,
-  ShareConfig
+  ShareConfig,
+  ClubYear,
+  PlayerValue,
+  PlayerYearlyValue
 };

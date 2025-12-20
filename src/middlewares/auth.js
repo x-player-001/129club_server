@@ -74,3 +74,29 @@ exports.checkRole = (roles = []) => {
     await next();
   };
 };
+
+/**
+ * 管理员权限中间件
+ * 只允许 super_admin 和 captain 访问
+ */
+exports.adminMiddleware = async (ctx, next) => {
+  const user = ctx.state.user;
+
+  if (!user) {
+    return unauthorized(ctx, '请先登录');
+  }
+
+  if (!['super_admin', 'captain'].includes(user.role)) {
+    ctx.status = 403;
+    ctx.body = {
+      code: 403,
+      success: false,
+      message: '需要管理员权限',
+      data: null,
+      timestamp: Date.now()
+    };
+    return;
+  }
+
+  await next();
+};

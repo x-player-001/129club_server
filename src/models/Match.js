@@ -82,6 +82,12 @@ const Match = sequelize.define('Match', {
     field: 'season_id',
     comment: '所属赛季ID'
   },
+  matchType: {
+    type: DataTypes.ENUM('internal', 'external'),
+    defaultValue: 'internal',
+    field: 'match_type',
+    comment: '比赛类型（internal=内战，external=外战）'
+  },
   createdBy: {
     type: DataTypes.UUID,
     allowNull: true,
@@ -109,7 +115,8 @@ const Match = sequelize.define('Match', {
     { fields: ['status'] },
     { fields: ['team1_id'] },
     { fields: ['team2_id'] },
-    { fields: ['season_id'] }
+    { fields: ['season_id'] },
+    { fields: ['match_type'] }
   ]
 });
 
