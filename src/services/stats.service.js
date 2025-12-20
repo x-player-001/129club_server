@@ -597,7 +597,7 @@ exports.getPlayerStats = async (userId, params = {}) => {
       if (usePlayerTeamStat) {
         // 赛季排名：需要按userId分组汇总后排名
         const [result] = await sequelize.query(`
-          SELECT COUNT(*) as rank FROM (
+          SELECT COUNT(*) as \`rank\` FROM (
             SELECT user_id, SUM(goals) as total_goals
             FROM player_team_stats
             WHERE season_id = :seasonId
@@ -624,7 +624,7 @@ exports.getPlayerStats = async (userId, params = {}) => {
       let assistsRank;
       if (usePlayerTeamStat) {
         const [result] = await sequelize.query(`
-          SELECT COUNT(*) as rank FROM (
+          SELECT COUNT(*) as \`rank\` FROM (
             SELECT user_id, SUM(assists) as total_assists
             FROM player_team_stats
             WHERE season_id = :seasonId
@@ -651,7 +651,7 @@ exports.getPlayerStats = async (userId, params = {}) => {
       let mvpRank;
       if (usePlayerTeamStat) {
         const [result] = await sequelize.query(`
-          SELECT COUNT(*) as rank FROM (
+          SELECT COUNT(*) as \`rank\` FROM (
             SELECT user_id, SUM(mvp_count) as total_mvp
             FROM player_team_stats
             WHERE season_id = :seasonId
