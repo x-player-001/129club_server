@@ -925,12 +925,12 @@ async function recalculatePlayerStats(userId) {
     where: { userId }
   });
 
-  // 统计进球和助攻
+  // 统计进球和助攻（排除乌龙球，乌龙球不计入个人进球）
   let totalGoals = 0;
   let totalAssists = 0;
 
   allEvents.forEach(event => {
-    if (event.eventType === 'goal') {
+    if (event.eventType === 'goal' && event.eventSubtype !== 'own_goal') {
       totalGoals += 1;
     }
   });
@@ -1121,12 +1121,16 @@ async function recalculatePlayerStats(userId) {
     for (const participation of seasonParticipations) {
       const matchId = participation.matchId;
 
-      // 统计进球
+      // 统计进球（排除乌龙球）
       const goals = await MatchEvent.count({
         where: {
           matchId,
           userId,
-          eventType: 'goal'
+          eventType: 'goal',
+          [Op.or]: [
+            { eventSubtype: null },
+            { eventSubtype: { [Op.ne]: 'own_goal' } }
+          ]
         }
       });
       seasonGoals += goals;
