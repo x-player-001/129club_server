@@ -587,7 +587,17 @@ exports.getPlayerStats = async (userId, params = {}) => {
         // 计算胜率
         const totalMatches = playerStat.wins + playerStat.draws + playerStat.losses;
         playerStat.winRate = totalMatches > 0 ? ((playerStat.wins / totalMatches) * 100).toFixed(2) : '0.00';
-        playerStat.attendanceRate = '0.00'; // 赛季数据暂不计算出勤率
+
+        // 计算赛季出勤率：用户参加场次 / 赛季总比赛场次
+        const seasonTotalMatches = await Match.count({
+          where: {
+            seasonId: actualSeasonId,
+            status: 'completed'
+          }
+        });
+        playerStat.attendanceRate = seasonTotalMatches > 0
+          ? ((playerStat.matchesPlayed / seasonTotalMatches) * 100).toFixed(2)
+          : '0.00';
       } else {
         playerStat = null;
       }
