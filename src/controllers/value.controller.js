@@ -3,7 +3,7 @@
  */
 
 const valueService = require('../services/value.service');
-const { success, fail } = require('../utils/response');
+const { success, error } = require('../utils/response');
 const logger = require('../utils/logger');
 
 /**
@@ -19,10 +19,10 @@ exports.getPlayerYearlyValue = async (ctx) => {
       clubYear ? parseInt(clubYear) : null
     );
 
-    ctx.body = success(result);
-  } catch (error) {
-    logger.error('getPlayerYearlyValue error:', error);
-    ctx.body = fail(error.message);
+    success(ctx, result);
+  } catch (err) {
+    logger.error('getPlayerYearlyValue error:', err);
+    error(ctx, err.message);
   }
 };
 
@@ -39,10 +39,10 @@ exports.getMyYearlyValue = async (ctx) => {
       clubYear ? parseInt(clubYear) : null
     );
 
-    ctx.body = success(result);
-  } catch (error) {
-    logger.error('getMyYearlyValue error:', error);
-    ctx.body = fail(error.message);
+    success(ctx, result);
+  } catch (err) {
+    logger.error('getMyYearlyValue error:', err);
+    error(ctx, err.message);
   }
 };
 
@@ -58,10 +58,10 @@ exports.getYearlyValueRanking = async (ctx) => {
       limit ? parseInt(limit) : 50
     );
 
-    ctx.body = success(result);
-  } catch (error) {
-    logger.error('getYearlyValueRanking error:', error);
-    ctx.body = fail(error.message);
+    success(ctx, result);
+  } catch (err) {
+    logger.error('getYearlyValueRanking error:', err);
+    error(ctx, err.message);
   }
 };
 
@@ -80,10 +80,10 @@ exports.getPlayerValueRecords = async (ctx) => {
       pageSize: pageSize ? parseInt(pageSize) : 20
     });
 
-    ctx.body = success(result);
-  } catch (error) {
-    logger.error('getPlayerValueRecords error:', error);
-    ctx.body = fail(error.message);
+    success(ctx, result);
+  } catch (err) {
+    logger.error('getPlayerValueRecords error:', err);
+    error(ctx, err.message);
   }
 };
 
@@ -102,10 +102,10 @@ exports.getMyValueRecords = async (ctx) => {
       pageSize: pageSize ? parseInt(pageSize) : 20
     });
 
-    ctx.body = success(result);
-  } catch (error) {
-    logger.error('getMyValueRecords error:', error);
-    ctx.body = fail(error.message);
+    success(ctx, result);
+  } catch (err) {
+    logger.error('getMyValueRecords error:', err);
+    error(ctx, err.message);
   }
 };
 
@@ -118,13 +118,13 @@ exports.addServiceValue = async (ctx) => {
     const { clubYear, matchId, serviceType, count, notes } = ctx.request.body;
 
     if (!serviceType) {
-      ctx.body = fail('请选择服务类型');
+      error(ctx, '请选择服务类型');
       return;
     }
 
     const validTypes = ['family', 'report', 'photo', 'invitation'];
     if (!validTypes.includes(serviceType)) {
-      ctx.body = fail('无效的服务类型');
+      error(ctx, '无效的服务类型');
       return;
     }
 
@@ -137,10 +137,10 @@ exports.addServiceValue = async (ctx) => {
       notes
     });
 
-    ctx.body = success(result, '服务身价已提交，等待审核');
-  } catch (error) {
-    logger.error('addServiceValue error:', error);
-    ctx.body = fail(error.message);
+    success(ctx, result, '服务身价已提交，等待审核');
+  } catch (err) {
+    logger.error('addServiceValue error:', err);
+    error(ctx, err.message);
   }
 };
 
@@ -153,12 +153,12 @@ exports.addSpecialValue = async (ctx) => {
     const { userId, clubYear, amount, notes, matchId } = ctx.request.body;
 
     if (!userId) {
-      ctx.body = fail('请选择球员');
+      error(ctx, '请选择球员');
       return;
     }
 
     if (!amount || amount === 0) {
-      ctx.body = fail('奖励金额不能为0');
+      error(ctx, '奖励金额不能为0');
       return;
     }
 
@@ -170,10 +170,10 @@ exports.addSpecialValue = async (ctx) => {
       matchId
     }, operatorId);
 
-    ctx.body = success(result, '特殊奖励已添加');
-  } catch (error) {
-    logger.error('addSpecialValue error:', error);
-    ctx.body = fail(error.message);
+    success(ctx, result, '特殊奖励已添加');
+  } catch (err) {
+    logger.error('addSpecialValue error:', err);
+    error(ctx, err.message);
   }
 };
 
@@ -187,7 +187,7 @@ exports.reviewServiceValue = async (ctx) => {
     const { approved } = ctx.request.body;
 
     if (approved === undefined) {
-      ctx.body = fail('请指定审核结果');
+      error(ctx, '请指定审核结果');
       return;
     }
 
@@ -197,10 +197,10 @@ exports.reviewServiceValue = async (ctx) => {
       operatorId
     );
 
-    ctx.body = success(result, approved ? '已通过审核' : '已驳回');
-  } catch (error) {
-    logger.error('reviewServiceValue error:', error);
-    ctx.body = fail(error.message);
+    success(ctx, result, approved ? '已通过审核' : '已驳回');
+  } catch (err) {
+    logger.error('reviewServiceValue error:', err);
+    error(ctx, err.message);
   }
 };
 
@@ -234,16 +234,16 @@ exports.getPendingServiceValues = async (ctx) => {
       limit: parseInt(pageSize)
     });
 
-    ctx.body = success({
+    success(ctx, {
       list: rows,
       total: count,
       page: parseInt(page),
       pageSize: parseInt(pageSize),
       totalPages: Math.ceil(count / parseInt(pageSize))
     });
-  } catch (error) {
-    logger.error('getPendingServiceValues error:', error);
-    ctx.body = fail(error.message);
+  } catch (err) {
+    logger.error('getPendingServiceValues error:', err);
+    error(ctx, err.message);
   }
 };
 
@@ -256,10 +256,10 @@ exports.recalculateMatchValues = async (ctx) => {
 
     const result = await valueService.calculateMatchValues(matchId);
 
-    ctx.body = success(result, '身价计算完成');
-  } catch (error) {
-    logger.error('recalculateMatchValues error:', error);
-    ctx.body = fail(error.message);
+    success(ctx, result, '身价计算完成');
+  } catch (err) {
+    logger.error('recalculateMatchValues error:', err);
+    error(ctx, err.message);
   }
 };
 
@@ -276,14 +276,14 @@ exports.getCurrentClubYear = async (ctx) => {
       where: { year: currentYear }
     });
 
-    ctx.body = success({
+    success(ctx, {
       currentYear,
       config: yearConfig,
       rules: valueService.VALUE_RULES
     });
-  } catch (error) {
-    logger.error('getCurrentClubYear error:', error);
-    ctx.body = fail(error.message);
+  } catch (err) {
+    logger.error('getCurrentClubYear error:', err);
+    error(ctx, err.message);
   }
 };
 
@@ -298,9 +298,9 @@ exports.getClubYears = async (ctx) => {
       order: [['year', 'DESC']]
     });
 
-    ctx.body = success(years);
-  } catch (error) {
-    logger.error('getClubYears error:', error);
-    ctx.body = fail(error.message);
+    success(ctx, years);
+  } catch (err) {
+    logger.error('getClubYears error:', err);
+    error(ctx, err.message);
   }
 };
