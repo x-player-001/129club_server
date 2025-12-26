@@ -384,8 +384,38 @@ async function calculateMatchValues(matchId) {
       }
     }
 
-    // 7.7 处理不在参赛名单中的裁判（只给裁判身价，不给出勤）
+    // 7.7 处理不在参赛名单中的裁判（给出勤奖励+裁判身价）
     const participantUserIds = new Set(participants.map(p => p.userId));
+    const nonParticipantRefereeIds = new Set();
+
+    // 收集所有不在参赛名单中的裁判ID
+    for (const quarter of quarters) {
+      [quarter.mainRefereeId, quarter.assistantReferee1Id, quarter.assistantReferee2Id]
+        .filter(id => id && !participantUserIds.has(id))
+        .forEach(id => nonParticipantRefereeIds.add(id));
+    }
+
+    // 为非参赛裁判添加出勤奖励（每人只加一次）
+    for (const refereeId of nonParticipantRefereeIds) {
+      affectedUserIds.add(refereeId);
+
+      // 出勤奖励
+      const attendanceMultiplier = isExternal ? externalMultiplier : 1;
+      valueRecords.push({
+        userId: refereeId,
+        clubYear,
+        matchId,
+        seasonId: match.seasonId,
+        sourceType: 'attendance',
+        sourceDetail: isExternal ? '出勤（外战）' : '出勤',
+        baseAmount: VALUE_RULES.attendance.base,
+        multiplier: attendanceMultiplier,
+        finalAmount: VALUE_RULES.attendance.base * attendanceMultiplier,
+        status: 'auto'
+      });
+    }
+
+    // 为非参赛裁判添加裁判身价（按节次）
     for (const quarter of quarters) {
       const refereeIds = [
         quarter.mainRefereeId,
@@ -394,25 +424,18 @@ async function calculateMatchValues(matchId) {
       ].filter(id => id && !participantUserIds.has(id));
 
       for (const refereeId of refereeIds) {
-        // 检查是否已经为这个裁判这一节添加过记录（避免重复）
-        const alreadyAdded = valueRecords.some(
-          r => r.userId === refereeId && r.sourceDetail === `裁判第${quarter.quarterNumber}节`
-        );
-        if (!alreadyAdded) {
-          affectedUserIds.add(refereeId);
-          valueRecords.push({
-            userId: refereeId,
-            clubYear,
-            matchId,
-            seasonId: match.seasonId,
-            sourceType: 'role',
-            sourceDetail: `裁判第${quarter.quarterNumber}节`,
-            baseAmount: VALUE_RULES.role.referee,
-            multiplier: 1,
-            finalAmount: VALUE_RULES.role.referee,
-            status: 'auto'
-          });
-        }
+        valueRecords.push({
+          userId: refereeId,
+          clubYear,
+          matchId,
+          seasonId: match.seasonId,
+          sourceType: 'role',
+          sourceDetail: `裁判第${quarter.quarterNumber}节`,
+          baseAmount: VALUE_RULES.role.referee,
+          multiplier: 1,
+          finalAmount: VALUE_RULES.role.referee,
+          status: 'auto'
+        });
       }
     }
 
