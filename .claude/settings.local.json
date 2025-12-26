@@ -46,7 +46,8 @@
       "Bash(cmd /c scriptssync-from-remote.bat)",
       "Bash(129club_remote_sync.sql)",
       "Bash(awk:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(del \"d:\\\\Code\\\\MiniProgram\\\\129club\\\\129club_server\\\\scripts\\\\fix-yearly-summary.js\")"
     ],
     "deny": [],
     "ask": []

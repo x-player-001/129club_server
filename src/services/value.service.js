@@ -651,7 +651,10 @@ async function getPlayerValueRecords(userId, options = {}) {
         attributes: ['id', 'name']
       }
     ],
-    order: [['createdAt', 'DESC']],
+    order: [
+      [{ model: Match, as: 'match' }, 'matchDate', 'DESC'],  // 按比赛日期倒序
+      ['createdAt', 'DESC']  // 同一比赛内按创建时间倒序
+    ],
     offset: (page - 1) * pageSize,
     limit: pageSize
   });
