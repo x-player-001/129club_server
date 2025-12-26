@@ -108,9 +108,12 @@ async function calculateMatchValues(matchId) {
 
     logger.info(`Calculating values for match ${matchId}, type: ${match.matchType}, clubYear: ${clubYear}`);
 
-    // 2. 删除该比赛的所有旧身价记录（幂等）
+    // 2. 删除该比赛的所有旧身价记录（幂等），但保留特殊奖励和服务身价
     await PlayerValue.destroy({
-      where: { matchId },
+      where: {
+        matchId,
+        sourceType: { [Op.notIn]: ['special', 'service'] }  // 不删除特殊奖励和服务身价
+      },
       transaction
     });
 
