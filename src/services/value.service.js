@@ -708,8 +708,9 @@ async function getPlayerValueRecords(userId, options = {}) {
     ],
     order: [
       [{ model: Match, as: 'match' }, 'matchDate', 'DESC'],  // 按比赛日期倒序
-      [sequelize.literal("CASE WHEN source_type = 'attendance' THEN 1 ELSE 0 END"), 'ASC'],  // 出勤排最后
-      ['createdAt', 'ASC']  // 同一比赛内按创建时间正序
+      // 同一比赛内排序：result(战绩) > role(角色) > data(数据) > attendance(出勤)
+      [sequelize.literal("CASE source_type WHEN 'result' THEN 0 WHEN 'role' THEN 1 WHEN 'data' THEN 2 WHEN 'attendance' THEN 3 ELSE 4 END"), 'ASC'],
+      ['createdAt', 'ASC']  // 同类型按创建时间正序
     ],
     offset: (page - 1) * pageSize,
     limit: pageSize
