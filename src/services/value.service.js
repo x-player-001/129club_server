@@ -384,6 +384,38 @@ async function calculateMatchValues(matchId) {
       }
     }
 
+    // 7.7 处理不在参赛名单中的裁判（只给裁判身价，不给出勤）
+    const participantUserIds = new Set(participants.map(p => p.userId));
+    for (const quarter of quarters) {
+      const refereeIds = [
+        quarter.mainRefereeId,
+        quarter.assistantReferee1Id,
+        quarter.assistantReferee2Id
+      ].filter(id => id && !participantUserIds.has(id));
+
+      for (const refereeId of refereeIds) {
+        // 检查是否已经为这个裁判这一节添加过记录（避免重复）
+        const alreadyAdded = valueRecords.some(
+          r => r.userId === refereeId && r.sourceDetail === `裁判第${quarter.quarterNumber}节`
+        );
+        if (!alreadyAdded) {
+          affectedUserIds.add(refereeId);
+          valueRecords.push({
+            userId: refereeId,
+            clubYear,
+            matchId,
+            seasonId: match.seasonId,
+            sourceType: 'role',
+            sourceDetail: `裁判第${quarter.quarterNumber}节`,
+            baseAmount: VALUE_RULES.role.referee,
+            multiplier: 1,
+            finalAmount: VALUE_RULES.role.referee,
+            status: 'auto'
+          });
+        }
+      }
+    }
+
     // 8. 批量插入身价记录
     if (valueRecords.length > 0) {
       await PlayerValue.bulkCreate(valueRecords, { transaction });
