@@ -82,3 +82,16 @@ exports.getJerseyNumbers = async (ctx) => {
     error(ctx, err.message);
   }
 };
+
+/**
+ * 搜索用户
+ */
+exports.searchUsers = async (ctx) => {
+  try {
+    const { keyword, limit = 10 } = ctx.query;
+    const result = await userService.searchUsers(keyword, limit);
+    success(ctx, result);
+  } catch (err) {
+    error(ctx, err.message);
+  }
+};

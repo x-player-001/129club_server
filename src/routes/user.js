@@ -21,4 +21,7 @@ router.get('/members/:userId', authMiddleware, userController.getMemberDetail);
 // 获取号码墙数据
 router.get('/jersey-numbers', authMiddleware, userController.getJerseyNumbers);
 
+// 搜索用户
+router.get('/search', authMiddleware, userController.searchUsers);
+
 module.exports = router;

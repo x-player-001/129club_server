@@ -445,6 +445,40 @@ exports.getMemberDetail = async (userId) => {
 
 
 /**
+ * 搜索用户
+ * @param {string} keyword 搜索关键词
+ * @param {number} limit 返回数量限制
+ */
+exports.searchUsers = async (keyword, limit = 10) => {
+  if (!keyword || keyword.trim() === '') {
+    return [];
+  }
+
+  const users = await User.findAll({
+    where: {
+      status: 'active',
+      [Op.or]: [
+        { realName: { [Op.like]: `%${keyword}%` } },
+        { nickname: { [Op.like]: `%${keyword}%` } }
+      ]
+    },
+    attributes: ['id', 'realName', 'nickname', 'avatar', 'jerseyNumber', 'currentTeamId', 'memberType'],
+    include: [
+      {
+        model: Team,
+        as: 'currentTeam',
+        attributes: ['id', 'name'],
+        required: false
+      }
+    ],
+    limit: parseInt(limit),
+    order: [['realName', 'ASC']]
+  });
+
+  return users;
+};
+
+/**
  * 获取号码墙数据（0-99号码使用情况）
  * 只返回 memberType 为 'regular' 的常规成员号码
  * @returns {Object} 号码使用情况
