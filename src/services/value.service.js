@@ -21,7 +21,7 @@ const VALUE_RULES = {
   },
   // 战绩身价
   result: {
-    winPool: 500,           // 胜利奖池 500万/场（到场者平分，不翻倍）
+    win: 50,                // 胜利奖励 50万/人（获胜队伍每人，不翻倍）
     drawPool: 200,          // 平局奖池 200万/场（到场者平分，不翻倍）
     mvp: 50                 // MVP 50万（外战翻倍）
   },
@@ -360,27 +360,23 @@ async function calculateMatchValues(matchId) {
           });
         }
       } else {
-        // 胜利：500万奖池平分给获胜队伍的到场者
+        // 胜利：获胜队伍每人50万
         const winnerTeamId = matchResult.winnerTeamId;
         const winningParticipants = participants.filter(p => p.teamId === winnerTeamId);
-        const winnerCount = winningParticipants.length;
 
-        if (winnerCount > 0) {
-          const winRewardPerPerson = Math.floor(VALUE_RULES.result.winPool / winnerCount);
-          for (const participant of winningParticipants) {
-            valueRecords.push({
-              userId: participant.userId,
-              clubYear,
-              matchId,
-              seasonId: match.seasonId,
-              sourceType: 'result',
-              sourceDetail: `胜利奖励(${winnerCount}人平分)`,
-              baseAmount: VALUE_RULES.result.winPool,
-              multiplier: 1 / winnerCount,
-              finalAmount: winRewardPerPerson,
-              status: 'auto'
-            });
-          }
+        for (const participant of winningParticipants) {
+          valueRecords.push({
+            userId: participant.userId,
+            clubYear,
+            matchId,
+            seasonId: match.seasonId,
+            sourceType: 'result',
+            sourceDetail: '胜利奖励',
+            baseAmount: VALUE_RULES.result.win,
+            multiplier: 1,
+            finalAmount: VALUE_RULES.result.win,
+            status: 'auto'
+          });
         }
       }
     }
