@@ -580,7 +580,9 @@ async function getYearlyValueRanking(clubYear = null, limit = 50) {
     include: [{
       model: User,
       as: 'user',
-      attributes: ['id', 'realName', 'nickname', 'avatar', 'jerseyNumber', 'currentTeamId']
+      attributes: ['id', 'realName', 'nickname', 'avatar', 'jerseyNumber', 'currentTeamId', 'memberType'],
+      where: { memberType: 'regular' },  // 只返回正式成员
+      required: true
     }],
     order: [['totalValue', 'DESC']],
     limit
