@@ -149,9 +149,12 @@ exports.getSeasonList = async (params) => {
   // 为每个赛季添加比赛数量和排名统计
   const listWithStats = await Promise.all(
     rows.map(async (season) => {
-      // 获取该赛季的所有比赛
+      // 获取该赛季的所有比赛（排除已取消的）
       const matches = await Match.findAll({
-        where: { seasonId: season.id },
+        where: {
+          seasonId: season.id,
+          status: { [Op.ne]: 'cancelled' }
+        },
         include: [
           {
             model: Team,
@@ -201,9 +204,12 @@ exports.getSeasonDetail = async (seasonId) => {
     throw new Error('赛季不存在');
   }
 
-  // 获取该赛季的所有比赛（包含比赛结果和点球数据）
+  // 获取该赛季的所有比赛（包含比赛结果和点球数据，排除已取消的）
   const matches = await Match.findAll({
-    where: { seasonId },
+    where: {
+      seasonId,
+      status: { [Op.ne]: 'cancelled' }
+    },
     include: [
       {
         model: Team,
