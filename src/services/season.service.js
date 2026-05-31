@@ -400,7 +400,7 @@ exports.completeSeason = async (seasonId) => {
   const incompleteMatches = await Match.findAll({
     where: {
       seasonId,
-      status: { [Op.ne]: 'completed' }
+      status: { [Op.notIn]: ['completed', 'cancelled'] }
     },
     attributes: ['id', 'title', 'status']
   });
