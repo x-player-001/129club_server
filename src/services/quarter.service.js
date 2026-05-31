@@ -1063,27 +1063,13 @@ async function recalculatePlayerStats(userId) {
   playerStat.losses = losses;
   playerStat.winRate = winRate;
 
-  // 计算出勤率（按队伍计算）
-  const user = await User.findByPk(userId, {
-    attributes: ['currentTeamId']
+  // 计算出勤率：分母用所有已完成比赛总场次
+  const totalMatchCount = await Match.count({
+    where: { status: 'completed' }
   });
 
-  if (user && user.currentTeamId) {
-    // 统计该队伍参加的已完成比赛总数
-    const teamMatchCount = await Match.count({
-      where: {
-        status: 'completed',
-        [Op.or]: [
-          { team1Id: user.currentTeamId },
-          { team2Id: user.currentTeamId }
-        ]
-      }
-    });
-
-    if (teamMatchCount > 0) {
-      // 出勤率 = 球员参赛场次 / 队伍总比赛数 × 100
-      playerStat.attendanceRate = ((playerStat.matchesPlayed / teamMatchCount) * 100).toFixed(2);
-    }
+  if (totalMatchCount > 0) {
+    playerStat.attendanceRate = ((playerStat.matchesPlayed / totalMatchCount) * 100).toFixed(2);
   }
 
   await playerStat.save();
@@ -1319,6 +1305,11 @@ async function updatePlayerStats(matchId) {
   // 更新两支队伍所有球员的出勤率（包括未参赛球员）
   const teamIds = [match.team1Id, match.team2Id];
 
+  // 所有已完成比赛总场次作为分母
+  const totalMatchCount = await Match.count({
+    where: { status: 'completed' }
+  });
+
   for (const teamId of teamIds) {
     // 获取该队伍所有球员（有PlayerStat记录的）
     const teamPlayers = await PlayerStat.findAll({
@@ -1330,25 +1321,14 @@ async function updatePlayerStats(matchId) {
       }]
     });
 
-    // 统计该队伍参加的已完成比赛总数
-    const teamMatchCount = await Match.count({
-      where: {
-        status: 'completed',
-        [Op.or]: [
-          { team1Id: teamId },
-          { team2Id: teamId }
-        ]
-      }
-    });
-
-    if (teamMatchCount > 0) {
+    if (totalMatchCount > 0) {
       // 更新每个队员的出勤率
       for (const playerStat of teamPlayers) {
         const oldRate = playerStat.attendanceRate;
-        playerStat.attendanceRate = ((playerStat.matchesPlayed / teamMatchCount) * 100).toFixed(2);
+        playerStat.attendanceRate = ((playerStat.matchesPlayed / totalMatchCount) * 100).toFixed(2);
         await playerStat.save();
 
-        logger.info(`Updated attendance for ${playerStat.user.id}: ${oldRate}% → ${playerStat.attendanceRate}% (${playerStat.matchesPlayed}/${teamMatchCount})`);
+        logger.info(`Updated attendance for ${playerStat.user.id}: ${oldRate}% → ${playerStat.attendanceRate}% (${playerStat.matchesPlayed}/${totalMatchCount})`);
       }
     }
   }

@@ -1010,24 +1010,31 @@ exports.getRanking = async (type, params = {}) => {
       limit
     });
 
-    // 如果是出勤榜且使用 PlayerTeamStat，需要计算队伍总场次来算出勤率
+    // 如果是出勤榜，预先计算分母（总比赛场次）
     let teamMatchCounts = {};
-    if (type === 'attendance' && usePlayerTeamStat) {
-      const { Team } = require('../models');
-      // 获取所有涉及的队伍及其总场次
-      const teamIds = [...new Set(rows.map(r => r.teamId))];
-      for (const teamId of teamIds) {
-        const teamMatchCount = await Match.count({
-          where: {
-            status: 'completed',
-            seasonId: actualSeasonId,
-            [Op.or]: [
-              { team1Id: teamId },
-              { team2Id: teamId }
-            ]
-          }
+    let totalMatchCount = 0;
+    if (type === 'attendance') {
+      if (usePlayerTeamStat) {
+        // 指定赛季：按各队伍在该赛季的场次计算
+        const teamIds = [...new Set(rows.map(r => r.teamId))];
+        for (const teamId of teamIds) {
+          const teamMatchCount = await Match.count({
+            where: {
+              status: 'completed',
+              seasonId: actualSeasonId,
+              [Op.or]: [
+                { team1Id: teamId },
+                { team2Id: teamId }
+              ]
+            }
+          });
+          teamMatchCounts[teamId] = teamMatchCount;
+        }
+      } else {
+        // 全部赛季：用所有已完成比赛总场次作为分母
+        totalMatchCount = await Match.count({
+          where: { status: 'completed' }
         });
-        teamMatchCounts[teamId] = teamMatchCount;
       }
     }
 
@@ -1063,15 +1070,17 @@ exports.getRanking = async (type, params = {}) => {
         baseData.goals = stat.goals;
         baseData.assists = stat.assists;
       } else if (type === 'attendance') {
-        // 如果使用 PlayerTeamStat，动态计算出勤率
         if (usePlayerTeamStat && stat.teamId && teamMatchCounts[stat.teamId]) {
+          // 指定赛季：用该队伍在该赛季的场次
           const teamTotal = teamMatchCounts[stat.teamId];
           baseData.attendanceRate = teamTotal > 0
             ? parseFloat(((stat.matchesPlayed / teamTotal) * 100).toFixed(2))
             : 0;
         } else {
-          // 使用 PlayerStat 的 attendanceRate 字段
-          baseData.attendanceRate = parseFloat(stat.attendanceRate || 0);
+          // 全部赛季：用所有已完成比赛总场次
+          baseData.attendanceRate = totalMatchCount > 0
+            ? parseFloat(((stat.matchesPlayed / totalMatchCount) * 100).toFixed(2))
+            : 0;
         }
         baseData.matchesPlayed = stat.matchesPlayed;
       }
