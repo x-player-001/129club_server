@@ -637,7 +637,7 @@ exports.startReshuffle = async (data, userId) => {
   });
 
   if (ongoingReshuffle) {
-    throw new Error('当前有正在进行的重组，请先完成或取消');
+    throw new Error(`当前有正在进行的重组（ID: ${ongoingReshuffle.id}），请先完成或取消`);
   }
 
   // 创建重组记录
