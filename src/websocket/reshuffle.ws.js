@@ -14,6 +14,7 @@ function getRoomClients(reshuffleId) {
 
 function broadcast(reshuffleId, message) {
   const clients = rooms.get(reshuffleId);
+  logger.info(`WS broadcast [${message.type}] to reshuffle ${reshuffleId}: ${clients ? clients.size : 0} clients, rooms: ${JSON.stringify([...rooms.keys()])}`);
   if (!clients) return;
   const data = JSON.stringify(message);
   for (const client of clients) {
