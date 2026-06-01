@@ -743,17 +743,21 @@ exports.pickPlayer = async (data, userId) => {
 
   logger.info(`Player picked: ${pickedUserId} by captain ${userId}, order: ${currentPickOrder}`);
 
-  // 返回选人记录和当前状态
-  return {
-    pick: await DraftPick.findByPk(pick.id, {
-      include: [
-        { model: User, as: 'pickedUser', attributes: ['id', 'nickname', 'realName', 'avatar', 'jerseyNumber', 'position'] },
-        { model: User, as: 'captain', attributes: ['id', 'nickname'] },
-        { model: Team, as: 'team', attributes: ['id', 'name', 'color'] }
-      ]
-    }),
-    nextCaptain: currentPickOrder % 4 === 1 || currentPickOrder % 4 === 0 ? reshuffle.captain2 : reshuffle.captain1
-  };
+  const nextCaptain = currentPickOrder % 4 === 1 || currentPickOrder % 4 === 0 ? reshuffle.captain2 : reshuffle.captain1;
+
+  const pickDetail = await DraftPick.findByPk(pick.id, {
+    include: [
+      { model: User, as: 'pickedUser', attributes: ['id', 'nickname', 'realName', 'avatar', 'jerseyNumber', 'position'] },
+      { model: User, as: 'captain', attributes: ['id', 'nickname'] },
+      { model: Team, as: 'team', attributes: ['id', 'name', 'color'] }
+    ]
+  });
+
+  // 广播选人结果给房间内所有人
+  const { broadcastPick } = require('../websocket/reshuffle.ws');
+  broadcastPick(reshuffleId, pickDetail, nextCaptain);
+
+  return { pick: pickDetail, nextCaptain };
 };
 
 /**
@@ -830,6 +834,10 @@ exports.completeReshuffle = async (reshuffleId, userId) => {
 
     logger.info(`Reshuffle completed: ${reshuffleId}`);
 
+    // 广播重组完成
+    const { broadcastComplete } = require('../websocket/reshuffle.ws');
+    broadcastComplete(reshuffleId);
+
     return reshuffle;
   } catch (error) {
     await transaction.rollback();
@@ -902,16 +910,17 @@ exports.getAvailablePlayers = async (reshuffleId) => {
     throw new Error('重组记录不存在');
   }
 
-  // 获取已选球员ID列表
+  // 获取已选球员ID列表，同时排除两位队长
   const pickedUserIds = reshuffle.picks.map(pick => pick.pickedUserId);
+  const excludedIds = [...new Set([...pickedUserIds, reshuffle.captain1Id, reshuffle.captain2Id])];
 
-  // 获取所有正式队员，排除已选的
+  // 获取所有正式队员，排除已选的和队长
   const availablePlayers = await User.findAll({
     where: {
       memberType: 'regular',
       status: 'active',
       id: {
-        [Op.notIn]: pickedUserIds.length > 0 ? pickedUserIds : ['00000000-0000-0000-0000-000000000000']
+        [Op.notIn]: excludedIds
       }
     },
     include: [

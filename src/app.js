@@ -1,3 +1,4 @@
+const http = require('http');
 const Koa = require('koa');
 const cors = require('koa-cors');
 const { koaBody } = require('koa-body');
@@ -15,6 +16,7 @@ const { authMiddleware } = require('./middlewares/auth');
 
 // 路由
 const routes = require('./routes');
+const { createReshuffleWsServer } = require('./websocket/reshuffle.ws');
 
 // 初始化应用
 const app = new Koa();
@@ -74,10 +76,13 @@ app.use(async (ctx) => {
 
 // 启动服务器
 const PORT = config.port || 3000;
-app.listen(PORT, () => {
+const server = http.createServer(app.callback());
+createReshuffleWsServer(server);
+server.listen(PORT, () => {
   logger.info(`🚀 Server running on port ${PORT}`);
   logger.info(`📝 Environment: ${config.env}`);
   logger.info(`🌐 API: http://localhost:${PORT}`);
+  logger.info(`🔌 WebSocket: ws://localhost:${PORT}/ws/reshuffle`);
 });
 
 // 优雅关闭
