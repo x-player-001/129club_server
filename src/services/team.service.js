@@ -918,7 +918,7 @@ exports.getAvailablePlayers = async (reshuffleId) => {
       {
         model: PlayerStat,
         as: 'stats',
-        attributes: ['matchesPlayed', 'goals', 'assists', 'saves', 'winRate'],
+        attributes: ['matchesPlayed', 'goals', 'assists', 'winRate'],
         required: false
       }
     ],
