@@ -163,6 +163,7 @@ function broadcastPick(reshuffleId, pickData, nextCaptain) {
   broadcast(reshuffleId, {
     type: 'pick',
     pick: pickData,
+    currentCaptain: pickData.captain,
     nextCaptain,
     currentPickOrder: pickData.pickOrder + 1,
     time: Date.now()
