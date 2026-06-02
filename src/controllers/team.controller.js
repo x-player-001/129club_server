@@ -170,6 +170,17 @@ exports.getPlayerDraftHistory = async (ctx) => {
 /**
  * 获取重组历史
  */
+exports.resetReshuffle = async (ctx) => {
+  try {
+    const { reshuffleId } = ctx.params;
+    const userId = ctx.state.user.id;
+    const result = await teamService.resetReshuffle(reshuffleId, userId);
+    success(ctx, result, '选人已重置');
+  } catch (err) {
+    error(ctx, err.message);
+  }
+};
+
 exports.getReshuffleHistory = async (ctx) => {
   try {
     const params = ctx.query;

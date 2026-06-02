@@ -963,6 +963,24 @@ exports.getPlayerDraftHistory = async (userId) => {
 };
 
 /**
+ * 重置重组选人（清空所有picks，重新开始）
+ */
+exports.resetReshuffle = async (reshuffleId, userId) => {
+  const reshuffle = await TeamReshuffle.findByPk(reshuffleId);
+  if (!reshuffle) throw new Error('重组记录不存在');
+
+  const user = await User.findByPk(userId);
+  if (user.role !== 'super_admin') throw new Error('只有管理员可以重置选人');
+
+  if (reshuffle.status !== 'draft_in_progress') throw new Error('只能重置进行中的重组');
+
+  await DraftPick.destroy({ where: { reshuffleId } });
+
+  logger.info(`Reshuffle reset: ${reshuffleId} by ${userId}`);
+  return { message: '已重置，可重新开始选人' };
+};
+
+/**
  * 获取重组历史记录
  * @param {Object} params 查询参数
  */

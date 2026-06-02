@@ -25,6 +25,7 @@ router.get('/:teamId/members', authMiddleware, teamController.getTeamMembers);
 router.post('/reshuffle/start', authMiddleware, checkRole(['super_admin']), teamController.startReshuffle);
 router.post('/reshuffle/pick', authMiddleware, teamController.pickPlayer);
 router.post('/reshuffle/:reshuffleId/complete', authMiddleware, teamController.completeReshuffle);
+router.post('/reshuffle/:reshuffleId/reset', authMiddleware, checkRole(['super_admin']), teamController.resetReshuffle);
 router.get('/reshuffle/:reshuffleId/status', authMiddleware, teamController.getReshuffleStatus);
 router.get('/reshuffle/:reshuffleId/available', authMiddleware, teamController.getAvailablePlayers);
 router.get('/reshuffle/history', authMiddleware, teamController.getReshuffleHistory);
