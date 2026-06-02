@@ -932,7 +932,7 @@ exports.getAvailablePlayers = async (reshuffleId) => {
       }
     ],
     attributes: ['id', 'nickname', 'realName', 'avatar', 'jerseyNumber', 'position'],
-    order: [['nickname', 'ASC']]
+    order: [[{ model: PlayerStat, as: 'stats' }, 'matchesPlayed', 'DESC']]
   });
 
   return availablePlayers;

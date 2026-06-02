@@ -124,6 +124,7 @@ function broadcastPick(reshuffleId, pickData, nextCaptain) {
     type: 'pick',
     pick: pickData,
     nextCaptain,
+    currentPickOrder: pickData.pickOrder + 1,
     time: Date.now()
   });
 }
