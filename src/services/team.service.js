@@ -693,16 +693,11 @@ exports.pickPlayer = async (data, userId) => {
   const currentPickOrder = reshuffle.picks.length + 1;
   const currentRound = Math.ceil(currentPickOrder / 2);
 
-  // 确定当前轮到谁选
+  // 确定当前轮到谁选（队长2先手，交替：2-1-2-1-2-1...）
   let expectedCaptainId;
-  if (currentPickOrder === 1) {
-    // 第1顺位，队长1先选
-    expectedCaptainId = reshuffle.captain1Id;
-  } else if (currentPickOrder % 4 === 2 || currentPickOrder % 4 === 3) {
-    // 第2,3,6,7,10,11... 顺位，队长2选
+  if (currentPickOrder % 2 === 1) {
     expectedCaptainId = reshuffle.captain2Id;
   } else {
-    // 第4,5,8,9,12,13... 顺位，队长1选
     expectedCaptainId = reshuffle.captain1Id;
   }
 
@@ -744,7 +739,7 @@ exports.pickPlayer = async (data, userId) => {
   logger.info(`Player picked: ${pickedUserId} by captain ${userId}, order: ${currentPickOrder}`);
 
   const nextOrder = currentPickOrder + 1;
-  const nextCaptain = nextOrder % 4 === 2 || nextOrder % 4 === 3 ? reshuffle.captain2 : reshuffle.captain1;
+  const nextCaptain = nextOrder % 2 === 1 ? reshuffle.captain2 : reshuffle.captain1;
 
   const pickDetail = await DraftPick.findByPk(pick.id, {
     include: [
@@ -878,9 +873,7 @@ exports.getReshuffleStatus = async (reshuffleId) => {
   let currentCaptain = null;
 
   if (reshuffle.status === 'draft_in_progress') {
-    if (currentPickOrder === 1) {
-      currentCaptain = reshuffle.captain1;
-    } else if (currentPickOrder % 4 === 2 || currentPickOrder % 4 === 3) {
+    if (currentPickOrder % 2 === 1) {
       currentCaptain = reshuffle.captain2;
     } else {
       currentCaptain = reshuffle.captain1;
