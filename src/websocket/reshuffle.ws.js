@@ -2,6 +2,14 @@ const WebSocket = require('ws');
 const { verifyToken } = require('../utils/jwt');
 const logger = require('../utils/logger');
 const { User } = require('../models');
+const { redisClient } = require('../config/redis');
+
+const DANMAKU_MAX = 50; // 每个房间最多保留50条
+const DANMAKU_TTL = 60 * 60 * 24; // 24小时过期
+
+function danmakuKey(reshuffleId) {
+  return `danmaku:reshuffle:${reshuffleId}`;
+}
 
 // 房间表：reshuffleId -> Set<{ ws, userId, nickname }>
 const rooms = new Map();
@@ -72,7 +80,21 @@ function createReshuffleWsServer(server) {
         clients.add({ ws, userId, nickname, avatar });
 
         ws.send(JSON.stringify({ type: 'joined', reshuffleId, nickname, avatar }));
+        broadcast(reshuffleId, { type: 'viewer_joined', userId, nickname, avatar, time: Date.now() });
         logger.info(`WS join reshuffle ${reshuffleId}: ${nickname}`);
+
+        // 推送历史弹幕
+        try {
+          const history = await redisClient.lRange(danmakuKey(reshuffleId), 0, -1);
+          if (history.length > 0) {
+            ws.send(JSON.stringify({
+              type: 'danmaku_history',
+              list: history.map(item => JSON.parse(item))
+            }));
+          }
+        } catch (e) {
+          logger.error(`WS danmaku history error: ${e.message}`);
+        }
         return;
       }
 
@@ -85,14 +107,25 @@ function createReshuffleWsServer(server) {
       // danmaku：发弹幕
       if (type === 'danmaku') {
         if (!text || !text.trim()) return;
-        broadcast(currentReshuffleId, {
+        const danmaku = {
           type: 'danmaku',
           userId: currentUser.userId,
           nickname: currentUser.nickname,
           avatar: currentUser.avatar,
           text: text.trim(),
           time: Date.now()
-        });
+        };
+        broadcast(currentReshuffleId, danmaku);
+
+        // 存入 Redis，保留最新50条
+        try {
+          const key = danmakuKey(currentReshuffleId);
+          await redisClient.rPush(key, JSON.stringify(danmaku));
+          await redisClient.lTrim(key, -DANMAKU_MAX, -1);
+          await redisClient.expire(key, DANMAKU_TTL);
+        } catch (e) {
+          logger.error(`WS danmaku save error: ${e.message}`);
+        }
         return;
       }
 
