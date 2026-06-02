@@ -743,7 +743,8 @@ exports.pickPlayer = async (data, userId) => {
 
   logger.info(`Player picked: ${pickedUserId} by captain ${userId}, order: ${currentPickOrder}`);
 
-  const nextCaptain = currentPickOrder % 4 === 1 || currentPickOrder % 4 === 0 ? reshuffle.captain2 : reshuffle.captain1;
+  const nextOrder = currentPickOrder + 1;
+  const nextCaptain = nextOrder % 4 === 2 || nextOrder % 4 === 3 ? reshuffle.captain2 : reshuffle.captain1;
 
   const pickDetail = await DraftPick.findByPk(pick.id, {
     include: [
