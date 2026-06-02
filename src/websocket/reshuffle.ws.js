@@ -1,6 +1,7 @@
 const WebSocket = require('ws');
 const { verifyToken } = require('../utils/jwt');
 const logger = require('../utils/logger');
+const { User } = require('../models');
 
 // 房间表：reshuffleId -> Set<{ ws, userId, nickname }>
 const rooms = new Map();
@@ -14,7 +15,6 @@ function getRoomClients(reshuffleId) {
 
 function broadcast(reshuffleId, message) {
   const clients = rooms.get(reshuffleId);
-  logger.info(`WS broadcast [${message.type}] to reshuffle ${reshuffleId}: ${clients ? clients.size : 0} clients, rooms: ${JSON.stringify([...rooms.keys()])}`);
   if (!clients) return;
   const data = JSON.stringify(message);
   for (const client of clients) {
@@ -31,7 +31,7 @@ function createReshuffleWsServer(server) {
     let currentUser = null;
     let currentReshuffleId = null;
 
-    ws.on('message', (raw) => {
+    ws.on('message', async (raw) => {
       let msg;
       try {
         msg = JSON.parse(raw);
@@ -52,21 +52,26 @@ function createReshuffleWsServer(server) {
         // 验证身份（可选，游客也可观看）
         let userId = null;
         let nickname = '游客';
+        let avatar = null;
         if (token) {
           const payload = verifyToken(token);
           if (payload) {
             userId = payload.id;
-            nickname = payload.nickname || userId;
+            const user = await User.findByPk(userId, { attributes: ['nickname', 'avatar'] });
+            if (user) {
+              nickname = user.nickname || userId;
+              avatar = user.avatar || null;
+            }
           }
         }
 
-        currentUser = { userId, nickname };
+        currentUser = { userId, nickname, avatar };
         currentReshuffleId = reshuffleId;
 
         const clients = getRoomClients(reshuffleId);
-        clients.add({ ws, userId, nickname });
+        clients.add({ ws, userId, nickname, avatar });
 
-        ws.send(JSON.stringify({ type: 'joined', reshuffleId, nickname }));
+        ws.send(JSON.stringify({ type: 'joined', reshuffleId, nickname, avatar }));
         logger.info(`WS join reshuffle ${reshuffleId}: ${nickname}`);
         return;
       }
@@ -84,6 +89,7 @@ function createReshuffleWsServer(server) {
           type: 'danmaku',
           userId: currentUser.userId,
           nickname: currentUser.nickname,
+          avatar: currentUser.avatar,
           text: text.trim(),
           time: Date.now()
         });
