@@ -293,6 +293,12 @@ exports.registerMatch = async (matchId, userId, data = {}) => {
     throw new Error('用户不存在');
   }
 
+  // 校验资料完整性：必须填写昵称和真实姓名后才能报名
+  // （避免仅静默登录、未完善个人信息的用户进入报名名单）
+  if (!user.nickname || !user.nickname.trim() || !user.realName || !user.realName.trim()) {
+    throw new Error('请先完善个人信息（昵称和真实姓名）后再报名');
+  }
+
   // 检查是否已报名
   const existingReg = await Registration.findOne({
     where: { matchId, userId }
