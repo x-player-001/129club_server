@@ -12,16 +12,16 @@ const redisClient = redis.createClient({
   database: config.redis.db
 });
 
-// 连接Redis
+// 连接Redis（可选，连接失败不影响服务启动）
 redisClient.connect().then(() => {
   logger.info('✅ Redis connection has been established successfully.');
 }).catch(err => {
-  logger.error('❌ Unable to connect to Redis:', err);
+  logger.warn(`⚠️ Redis unavailable, running without cache: ${err.message}`);
 });
 
 // 错误处理
 redisClient.on('error', (err) => {
-  logger.error('Redis Client Error:', err);
+  logger.warn(`Redis Client Error (non-fatal): ${err.message}`);
 });
 
 // 封装常用方法
