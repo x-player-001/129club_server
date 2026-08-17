@@ -622,6 +622,10 @@ exports.startReshuffle = async (data, userId) => {
     throw new Error('队长不存在');
   }
 
+  if (captain1Id === captain2Id) {
+    throw new Error('两个队伍的队长不能是同一人');
+  }
+
   // 验证两个队伍
   const team1 = await Team.findByPk(team1Id);
   const team2 = await Team.findByPk(team2Id);
@@ -689,16 +693,16 @@ exports.pickPlayer = async (data, userId) => {
     throw new Error('只有队长可以选人');
   }
 
-  // 计算当前选人顺序（蛇形选择：1-2-2-2-2...）
+  // 计算当前选人顺序
   const currentPickOrder = reshuffle.picks.length + 1;
   const currentRound = Math.ceil(currentPickOrder / 2);
 
-  // 确定当前轮到谁选（队长2先手，交替：2-1-2-1-2-1...）
+  // 确定当前轮到谁选（队长1先手，交替：1-2-1-2-1-2...）
   let expectedCaptainId;
   if (currentPickOrder % 2 === 1) {
-    expectedCaptainId = reshuffle.captain2Id;
-  } else {
     expectedCaptainId = reshuffle.captain1Id;
+  } else {
+    expectedCaptainId = reshuffle.captain2Id;
   }
 
   if (userId !== expectedCaptainId) {
@@ -739,7 +743,7 @@ exports.pickPlayer = async (data, userId) => {
   logger.info(`Player picked: ${pickedUserId} by captain ${userId}, order: ${currentPickOrder}`);
 
   const nextOrder = currentPickOrder + 1;
-  const nextCaptain = nextOrder % 2 === 1 ? reshuffle.captain2 : reshuffle.captain1;
+  const nextCaptain = nextOrder % 2 === 1 ? reshuffle.captain1 : reshuffle.captain2;
 
   const pickDetail = await DraftPick.findByPk(pick.id, {
     include: [
@@ -874,9 +878,9 @@ exports.getReshuffleStatus = async (reshuffleId) => {
 
   if (reshuffle.status === 'draft_in_progress') {
     if (currentPickOrder % 2 === 1) {
-      currentCaptain = reshuffle.captain2;
-    } else {
       currentCaptain = reshuffle.captain1;
+    } else {
+      currentCaptain = reshuffle.captain2;
     }
   }
 
