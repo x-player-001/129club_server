@@ -150,7 +150,7 @@ async function migrate() {
       await sequelize.query(`
         ALTER TABLE users
         ADD COLUMN is_outside_player TINYINT(1) DEFAULT 0
-        COMMENT '是否为外地球员（外地球员出勤身价+1000万/场）'
+        COMMENT '是否为外地球员（出勤身价1000万/场）'
         AFTER join_date;
       `);
       console.log('   ✓ is_outside_player 字段添加成功\n');
@@ -205,7 +205,7 @@ async function migrate() {
     console.log('  - users.is_outside_player (外地球员标识)\n');
 
     console.log('身价规则:');
-    console.log('  - 出勤: 100万 (外地球员额外+1000万)');
+    console.log('  - 出勤: 普通球员100万，外地球员1000万');
     console.log('  - 守门/裁判: 50万/节');
     console.log('  - 胜利: 50万, 平局: 20万, MVP: 50万');
     console.log('  - 进球/助攻: 50万/次 (仅外战)');

@@ -11,8 +11,8 @@ const logger = require('../utils/logger');
 const VALUE_RULES = {
   // 出勤身价
   attendance: {
-    base: 100,              // 基础出勤 100万（外战翻倍）
-    outsidePlayerBonus: 1000 // 外地球员额外 +1000万/场（固定，不翻倍）
+    base: 100,       // 普通球员出勤 100万（外战翻倍）
+    outsidePlayer: 1000 // 外地球员出勤 1000万/场（固定）
   },
   // 角色身价（每节）
   role: {
@@ -165,9 +165,12 @@ async function calculateMatchValues(matchId) {
       const user = participant.user;
       affectedUserIds.add(userId);
 
-      // 7.1 出勤身价（外战翻倍）
-      const attendanceBase = VALUE_RULES.attendance.base;
-      const attendanceMultiplier = isExternal ? externalMultiplier : 1;
+      // 7.1 出勤身价：外地球员每场固定1000万；普通球员外战翻倍
+      const isOutsidePlayer = Boolean(user && user.isOutsidePlayer);
+      const attendanceBase = isOutsidePlayer
+        ? VALUE_RULES.attendance.outsidePlayer
+        : VALUE_RULES.attendance.base;
+      const attendanceMultiplier = isExternal && !isOutsidePlayer ? externalMultiplier : 1;
       const attendanceFinal = attendanceBase * attendanceMultiplier;
 
       valueRecords.push({
@@ -176,28 +179,14 @@ async function calculateMatchValues(matchId) {
         matchId,
         seasonId: match.seasonId,
         sourceType: 'attendance',
-        sourceDetail: isExternal ? '出勤（外战）' : '出勤',
+        sourceDetail: isOutsidePlayer
+          ? '外地球员出勤'
+          : (isExternal ? '出勤（外战）' : '出勤'),
         baseAmount: attendanceBase,
         multiplier: attendanceMultiplier,
         finalAmount: attendanceFinal,
         status: 'auto'
       });
-
-      // 外地球员额外奖励（固定1000万，不受翻倍影响）
-      if (user && user.isOutsidePlayer) {
-        valueRecords.push({
-          userId,
-          clubYear,
-          matchId,
-          seasonId: match.seasonId,
-          sourceType: 'attendance',
-          sourceDetail: '外地球员奖励',
-          baseAmount: VALUE_RULES.attendance.outsidePlayerBonus,
-          multiplier: 1,
-          finalAmount: VALUE_RULES.attendance.outsidePlayerBonus,
-          status: 'auto'
-        });
-      }
 
       // 7.2 角色身价（守门和裁判）
       for (const quarter of quarters) {
@@ -395,22 +384,39 @@ async function calculateMatchValues(matchId) {
         .forEach(id => nonParticipantRefereeIds.add(id));
     }
 
-    // 为非参赛裁判添加出勤奖励（每人只加一次）
+    // 为非参赛裁判添加出勤身价（每人只加一次）
+    const nonParticipantReferees = nonParticipantRefereeIds.size > 0
+      ? await User.findAll({
+        where: { id: { [Op.in]: [...nonParticipantRefereeIds] } },
+        attributes: ['id', 'isOutsidePlayer'],
+        transaction
+      })
+      : [];
+    const nonParticipantRefereeById = new Map(
+      nonParticipantReferees.map(user => [user.id, user])
+    );
+
     for (const refereeId of nonParticipantRefereeIds) {
       affectedUserIds.add(refereeId);
 
-      // 出勤奖励
-      const attendanceMultiplier = isExternal ? externalMultiplier : 1;
+      // 非参赛裁判同样按球员类型计算出勤身价
+      const isOutsidePlayer = Boolean(nonParticipantRefereeById.get(refereeId)?.isOutsidePlayer);
+      const attendanceBase = isOutsidePlayer
+        ? VALUE_RULES.attendance.outsidePlayer
+        : VALUE_RULES.attendance.base;
+      const attendanceMultiplier = isExternal && !isOutsidePlayer ? externalMultiplier : 1;
       valueRecords.push({
         userId: refereeId,
         clubYear,
         matchId,
         seasonId: match.seasonId,
         sourceType: 'attendance',
-        sourceDetail: isExternal ? '出勤（外战）' : '出勤',
-        baseAmount: VALUE_RULES.attendance.base,
+        sourceDetail: isOutsidePlayer
+          ? '外地球员出勤'
+          : (isExternal ? '出勤（外战）' : '出勤'),
+        baseAmount: attendanceBase,
         multiplier: attendanceMultiplier,
-        finalAmount: VALUE_RULES.attendance.base * attendanceMultiplier,
+        finalAmount: attendanceBase * attendanceMultiplier,
         status: 'auto'
       });
     }

@@ -131,7 +131,7 @@ const User = sequelize.define('User', {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
     field: 'is_outside_player',
-    comment: '是否为外地球员（外地球员出勤身价+1000万/场）'
+    comment: '是否为外地球员（出勤身价1000万/场）'
   },
   createdAt: {
     type: DataTypes.DATE,
